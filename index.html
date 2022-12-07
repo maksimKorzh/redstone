@@ -3,13 +3,13 @@
 <div id="tools">
   <table cellspacing="0">
     <tr>
-      <td><button onclick="tool=0;">Operate</button></td>
+      <td><button onclick="tool=OPERATE;">Operate</button></td>
       <td><button onclick="tool=SWITCH;">Switch</button></td>
       <td><button onclick="tool=BUTTON;">Button</button></td>
       <td><button onclick="tool=INVERTOR;">Invertor</button></td>
-      <td><button onclick="tool=4;">Wire</button></td>
-      <td><button onclick="tool=5;">Light</button></td>
-      <td><button onclick="tool=7;">Erase</button></td>
+      <td><button onclick="tool=WIRE;">Wire</button></td>
+      <td><button onclick="tool=LIGHT;">Light</button></td>
+      <td><button onclick="tool=ERASE;">Erase</button></td>
     </tr>
   </table>
 </div>
@@ -78,8 +78,10 @@
         break;
       
       case BUTTON:
+      case (BUTTON | POWERED):
         render = '<button style="width: 100%; height: 100%" ' +
-        'onclick="alert();"></button> '
+        'onclick="board[' + square + '] ^= POWERED; \
+         setTimeout(function() {board[' + square + '] ^= POWERED; }, 2000)"></button> ';
         break;
       
       case INVERTOR:
@@ -133,6 +135,7 @@
     var tool = board[square];
     if (tool == OFFBOARD) return;
     if (tool == (SWITCH | POWERED)) isPowered = 1;
+    if (tool == (BUTTON | POWERED)) isPowered = 1;
     if (tool == WIRE || tool == (WIRE | POWERED) || tool == LIGHT || tool == (LIGHT | POWERED)) {
       board[square] |= MARKED;
       traversed.push(square);

@@ -5,8 +5,8 @@
     <tr>
       <td><button onclick="tool=0;">Operate</button></td>
       <td><button onclick="tool=SWITCH;">Switch</button></td>
-      <td><button onclick="tool=2;">Button</button></td>
-      <td><button onclick="tool=3;">Invertor</button></td>
+      <td><button onclick="tool=BUTTON;">Button</button></td>
+      <td><button onclick="tool=INVERTOR;">Invertor</button></td>
       <td><button onclick="tool=4;">Wire</button></td>
       <td><button onclick="tool=5;">Light</button></td>
       <td><button onclick="tool=7;">Erase</button></td>
@@ -15,7 +15,7 @@
 </div>
 <script>
   const EMPTY = 0;
-  const OPERATE = 8;
+  const OPERATE = 0;
   const SWITCH = 1;
   const BUTTON = 2;
   const INVERTOR = 3;
@@ -23,6 +23,9 @@
   const LIGHT = 5;
   const ERASE = 7;
   const OFFBOARD = 8;
+  const POWERED = 32;
+  const MARKED = 64;
+  const TOOL = 15;
 
   var WIDTH = 11;
   var HEIGHT = 11;
@@ -36,7 +39,7 @@
       for (let col = 0; col < WIDTH; col++) {
         square = row * WIDTH + col;
         board[square] = 0;
-        if (col == 0 || col == WIDTH-1 || row == 0 || row == HEIGHT-1) board[square] = OPERATE;
+        if (col == 0 || col == WIDTH-1 || row == 0 || row == HEIGHT-1) board[square] = OFFBOARD;
       }
     }
   }
@@ -64,31 +67,49 @@
   function renderElement(square) {
     var render = '';
     switch (board[square]) {
-      case 0: render = '<div style="width: 100%; height: 100%; background-color: grey;"></div>'; break;
-      case 1:
-      case (1 | 32): render = '<input type="checkbox" ' + ((board[square] & 32) ? 'checked' : '') +
-                         ' onclick="board[' + square + '] ^= 32;"/>';
-                         break;
+      case EMPTY: render = '<div style="width: 100%; height: 100%; background-color: lightgrey;"></div>'; break;
       
-      case 4: render = '<div style="width: 100%; height: 100%; background-color: green;"></div>'; break;
       
-      case 5:
-      case (5 ^ 32):
+      case SWITCH:
+      case (SWITCH | POWERED):
+        render = '<input type="checkbox" style="padding: 0px; margin: 0px; width: 100%; height: 100%;" ' + 
+        ((board[square] & POWERED) ? 'checked' : '') +
+        ' onchange="board[' + square + '] ^= POWERED;"/>';
+        break;
+      
+      case BUTTON:
+        render = '<button style="width: 100%; height: 100%" ' +
+        'onclick="alert();"></button> '
+        break;
+      
+      case INVERTOR:
+      case INVERTOR | POWERED:
+        render = '<div style="width: 100%; height: 100%; background-color: '
+        + ((board[square] & POWERED) ? 'blue' : 'darkblue') +
+        ';"></div>';
+        break;
+      
+      case WIRE:
+      case WIRE | POWERED:
+        render = '<div style="width: 100%; height: 100%; background-color: '
+        + ((board[square] & POWERED) ? 'lightgreen' : 'darkgreen') +
+        ';"></div>';
+        break;
+      
+      case LIGHT:
+      case (LIGHT | POWERED):
               render = '<div style="width: 100%; height: 100%; background-color: '
-              + ((board[square] & 32) ? 'red' : 'darkred') +
+              + ((board[square] & POWERED) ? 'red' : 'brown') +
               ';"></div>';
               break;
-      
+              
+      case OFFBOARD: render = '<div style="width: 100%; height: 100%; background-color: darkred;"></div>'; break;
 
     }
     
     return render;
   }
-  
-  function traceWire(square) {
-    if (board[square]) board[square] |= 32;
-  }
-  
+    
   function updateBoard() {
     for (let sq = 0; sq < SIZE; sq++) {
       
@@ -97,7 +118,7 @@
   
   function clickSquare(square, value) {
     if (tool == OPERATE) {
-      if (board[square]==5) isPowered(square);
+      
       return;
     } else if (tool == ERASE) {
       board[square] = 0;
@@ -107,9 +128,33 @@
     printBoard();
   }
   
-  function isPowered(square) {
-    if (board[square]) {
-    
+  var traversed = []; var isPowered = 0;
+  function traceSignal(square) {
+    var tool = board[square];
+    if (tool == OFFBOARD) return;
+    if (tool == (SWITCH | POWERED)) isPowered = 1;
+    if (tool == WIRE || tool == (WIRE | POWERED) || tool == LIGHT || tool == (LIGHT | POWERED)) {
+      board[square] |= MARKED;
+      traversed.push(square);
+      traceSignal(square + 1);
+      traceSignal(square - 1);
+      traceSignal(square + WIDTH);
+      traceSignal(square - WIDTH);
+    }
+  }
+  
+  function restoreBoard() {
+    for (let i = 0; i < traversed.length; i++) {
+      board[traversed[i]] &= TOOL;
+      if (isPowered) board[traversed[i]] |= POWERED;
+      if (!isPowered) board[traversed[i]] &= TOOL;
+    } traversed = []; isPowered = 0;
+  }
+  
+  function updateState() {
+    for (let square = 0; square < SIZE; square++) {
+      traceSignal(parseInt(square));
+      restoreBoard();
     }
   }
 
@@ -118,6 +163,7 @@
   
   setInterval(function() {
     printBoard();
+    updateState();
   }, 1000);
 </script>
 </html>

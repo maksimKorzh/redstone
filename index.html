@@ -6,7 +6,7 @@
       <td><button onclick="tool=OPERATE;">Operate</button></td>
       <td><button onclick="tool=SWITCH;">Switch</button></td>
       <td><button onclick="tool=BUTTON;">Button</button></td>
-      <td><button onclick="tool=INVERTOR;">Invertor</button></td>
+      <td><button onclick="tool=INVERTER;">Inverter</button></td>
       <td><button onclick="tool=WIRE;">Wire</button></td>
       <td><button onclick="tool=LIGHT;">Light</button></td>
       <td><button onclick="tool=ERASE;">Erase</button></td>
@@ -18,7 +18,7 @@
   const OPERATE = 0;
   const SWITCH = 1;
   const BUTTON = 2;
-  const INVERTOR = 3;
+  const INVERTER = 3;
   const WIRE = 4;
   const LIGHT = 5;
   const ERASE = 7;
@@ -84,8 +84,8 @@
          setTimeout(function() {board[' + square + '] ^= POWERED; }, 2000)"></button> ';
         break;
       
-      case INVERTOR:
-      case INVERTOR | POWERED:
+      case INVERTER:
+      case INVERTER | POWERED:
         render = '<div style="width: 100%; height: 100%; background-color: '
         + ((board[square] & POWERED) ? 'blue' : 'darkblue') +
         ';"></div>';
@@ -131,32 +131,50 @@
   }
   
   var traversed = []; var isPowered = 0;
-  function traceSignal(square) {
+  function traceSignal(square, direction) {
     var tool = board[square];
     if (tool == OFFBOARD) return;
-    if (tool == (SWITCH | POWERED)) isPowered = 1;
-    if (tool == (BUTTON | POWERED)) isPowered = 1;
-    if (tool == WIRE || tool == (WIRE | POWERED) || tool == LIGHT || tool == (LIGHT | POWERED)) {
+
+    if ((tool == (SWITCH | POWERED)) ||
+        (tool == (BUTTON | POWERED))) {
+        isPowered = 1;
+      return;
+    }
+    
+    if (tool == WIRE ||
+        tool == LIGHT ||
+        tool == INVERTER ||
+        tool == (WIRE | POWERED) ||
+        tool == (LIGHT | POWERED) ||
+        tool == (INVERTER | POWERED)) {
       board[square] |= MARKED;
       traversed.push(square);
-      traceSignal(square + 1);
-      traceSignal(square - 1);
-      traceSignal(square + WIDTH);
-      traceSignal(square - WIDTH);
+      traceSignal(square + 1, 1);
+      traceSignal(square - 1, -1);
+      traceSignal(square + WIDTH, WIDTH);
+      traceSignal(square - WIDTH) -WIDTH;
     }
   }
   
   function restoreBoard() {
     for (let i = 0; i < traversed.length; i++) {
       board[traversed[i]] &= TOOL;
-      if (isPowered) board[traversed[i]] |= POWERED;
-      if (!isPowered) board[traversed[i]] &= TOOL;
+      if (isPowered) {
+        if ((board[traversed[i]] != INVERTER) && 
+             board[traversed[i]] != (INVERTER | POWERED)) board[traversed[i]] |= POWERED;
+        else board[traversed[i]] &= TOOL;
+      }
+      if (!isPowered) {
+        if ((board[traversed[i]] != INVERTER) && 
+             board[traversed[i]] != (INVERTER | POWERED)) board[traversed[i]] &= TOOL;
+        else board[traversed[i]] |= POWERED;
+      }
     } traversed = []; isPowered = 0;
   }
   
   function updateState() {
     for (let square = 0; square < SIZE; square++) {
-      traceSignal(parseInt(square));
+      traceSignal(parseInt(square), 0);
       restoreBoard();
     }
   }

@@ -18,7 +18,7 @@
   const OPERATE = 0;
   const SWITCH = 1;
   const BUTTON = 2;
-  const INVERTER = 3;
+  const INVERTER = 3|32;
   const WIRE = 4;
   const LIGHT = 5;
   const ERASE = 7;
@@ -134,7 +134,10 @@
   function traceSignal(square, direction) {
     var tool = board[square];
     if (tool == OFFBOARD) return;
-
+    if (tool == (INVERTER | POWERED) && direction == WIDTH) {
+      isPowered = 1;
+      return;
+    }
     if ((tool == (SWITCH | POWERED)) ||
         (tool == (BUTTON | POWERED))) {
         isPowered = 1;
@@ -143,10 +146,8 @@
     
     if (tool == WIRE ||
         tool == LIGHT ||
-        tool == INVERTER ||
         tool == (WIRE | POWERED) ||
-        tool == (LIGHT | POWERED) ||
-        tool == (INVERTER | POWERED)) {
+        tool == (LIGHT | POWERED)) {
       board[square] |= MARKED;
       traversed.push(square);
       traceSignal(square + 1, 1);

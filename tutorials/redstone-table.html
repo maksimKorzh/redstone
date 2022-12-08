@@ -1,6 +1,5 @@
-<html>
-<div id="board"></div>
-<div id="tools">
+<div align="center" id="board"></div>
+<div align="center" id="tools">
   <table cellspacing="0">
     <tr>
       <td><button onclick="tool=OPERATE;">Operate</button></td>
@@ -10,7 +9,6 @@
       <td><button onclick="tool=WIRE;">Wire</button></td>
       <td><button onclick="tool=LIGHT;">Light</button></td>
       <td><button onclick="tool=ERASE;">Erase</button></td>
-      <td><button onclick="printBoard(); updateState();">STEP</button></td>
     </tr>
   </table>
 </div>
@@ -22,7 +20,7 @@
   const INVERTER = 3;
   const WIRE = 4;
   const LIGHT = 5;
-  const ERASE = 7;
+  const ERASE = 6;
   const OFFBOARD = 8;
   const POWERED = 32;
   const MARKED = 64;
@@ -32,36 +30,42 @@
   var HEIGHT = 13;
   var SIZE = WIDTH * HEIGHT;
   
+  var TICK_DELAY = 1000;
+  var BUTTON_DELAY = 2000;
+  
   var board = new Array(SIZE);
   var tool = OPERATE;
+  
+  var traversed = [];
+  var isPowered = 0;
   
   function initBoard() {
     for (let row = 0; row < HEIGHT; row++) {
       for (let col = 0; col < WIDTH; col++) {
-        square = row * WIDTH + col;
-        board[square] = 0;
+        let square = row * WIDTH + col;
+        board[square] = EMPTY;
         if (col == 0 || col == WIDTH-1 || row == 0 || row == HEIGHT-1) board[square] = OFFBOARD;
       }
     }
   }
   
-  function printBoard() {
-    var boardHTML = '<table cellspacing="0">';
+  function renderBoard() {
+    let boardHTML = '<table cellspacing="0">';
     for (let row = 0; row < HEIGHT; row++) {
-      boardHTML += '<tr>'
+      boardHTML += '<tr>';
       for (let col = 0; col < WIDTH; col++) {
         if (col == 0 || col == WIDTH-1 || row == 0 || row == HEIGHT-1) continue;
-        let square = row*WIDTH+col;
+        let square = row * WIDTH + col;
         boardHTML += '<td id=' + square + ' \
                           style="border: 0px; \
                           width: 40px; height: 40px;" \
-                          onclick="clickSquare(this.id, tool)">'
+                          onclick="clickSquare(this.id)">'
                           + renderElement(square) +
                           '</td>';
-      } boardHTML += '</tr>';
+      }
+      boardHTML += '</tr>';
     }
-    
-    boardHTML += '</table>';
+    boardHTML += '</table>'
     document.getElementById('board').innerHTML = boardHTML;
   }
   
@@ -82,7 +86,7 @@
       case (BUTTON | POWERED):
         render = '<button style="width: 100%; height: 100%" ' +
         'onclick="board[' + square + '] ^= POWERED; \
-         setTimeout(function() {board[' + square + '] ^= POWERED; }, 2000)"></button> ';
+         setTimeout(function() {board[' + square + '] ^= POWERED; }, BUTTON_DELAY)"></button> ';
         break;
       
       case INVERTER:
@@ -112,26 +116,7 @@
     
     return render;
   }
-    
-  function updateBoard() {
-    for (let sq = 0; sq < SIZE; sq++) {
-      
-    }
-  }
   
-  function clickSquare(square, value) {
-    if (tool == OPERATE) {
-      
-      return;
-    } else if (tool == ERASE) {
-      board[square] = 0;
-    } else {
-      board[square]=tool;
-    }
-    printBoard();
-  }
-  
-  var traversed = []; var isPowered = 0;
   function traceSignal(square, direction) {
     var tool = board[square];
     if (tool == OFFBOARD) return;
@@ -141,15 +126,15 @@
         board[square] |= POWERED;
         return;
     }
-    if (tool == (INVERTER | POWERED)) {//console.log(direction + ' ' + board[square + direction])
+    if (tool == (INVERTER | POWERED)) {
       if (direction == -WIDTH && (board[square - direction] & POWERED)) board[square] &= TOOL;
-      if (direction == WIDTH && board[square - direction]) isPowered = 1//board[square - direction] |= POWERED;
+      if (direction == WIDTH && board[square - direction]) isPowered = 1;
       return;
     }
     
     if ((tool == (SWITCH | POWERED)) ||
         (tool == (BUTTON | POWERED))) {
-        isPowered = 1;
+      isPowered = 1;
       return;
     }
     
@@ -168,18 +153,16 @@
     }
   }
   
-  function restoreBoard() {
+  function updatePower() {
     for (let i = 0; i < traversed.length; i++) {
       board[traversed[i]] &= TOOL;
       if (isPowered) {
         if ((board[traversed[i]] != INVERTER) && 
              board[traversed[i]] != (INVERTER | POWERED)) board[traversed[i]] |= POWERED;
-        //else board[traversed[i]] &= TOOL;
       }
       if (!isPowered) {
         if ((board[traversed[i]] != INVERTER) && 
              board[traversed[i]] != (INVERTER | POWERED)) board[traversed[i]] &= TOOL;
-        //else board[traversed[i]] |= POWERED;
       }
     } traversed = []; isPowered = 0;
   }
@@ -187,16 +170,26 @@
   function updateState() {
     for (let square = 0; square < SIZE; square++) {
       traceSignal(parseInt(square), 0);
-      restoreBoard();
+      updatePower();
     }
   }
-
-  initBoard();   
-  printBoard();
+  
+  function clickSquare(square) {
+    if (tool == OPERATE) return;
+    else if (tool == ERASE) board[square] = EMPTY;
+    else board[square] = tool;
+    renderBoard();
+  }
+  
+  initBoard();
+  renderBoard();
   
   setInterval(function() {
-    printBoard();
+    renderBoard();
     updateState();
-  }, 1000);
+  }, TICK_DELAY);
+  
 </script>
-</html>
+
+
+

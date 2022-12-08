@@ -10,6 +10,7 @@
       <td><button onclick="tool=WIRE;">Wire</button></td>
       <td><button onclick="tool=LIGHT;">Light</button></td>
       <td><button onclick="tool=ERASE;">Erase</button></td>
+      <td><button onclick="printBoard(); updateState();">STEP</button></td>
     </tr>
   </table>
 </div>
@@ -27,8 +28,8 @@
   const MARKED = 64;
   const TOOL = 15;
 
-  var WIDTH = 11;
-  var HEIGHT = 11;
+  var WIDTH = 13;
+  var HEIGHT = 13;
   var SIZE = WIDTH * HEIGHT;
   
   var board = new Array(SIZE);
@@ -87,7 +88,7 @@
       case INVERTER:
       case INVERTER | POWERED:
         render = '<div style="width: 100%; height: 100%; background-color: '
-        + ((board[square] & POWERED) ? 'blue' : 'darkblue') +
+        + ((board[square] & POWERED) ? 'magenta' : 'darkmagenta') +
         ';"></div>';
         break;
       

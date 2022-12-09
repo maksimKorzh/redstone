@@ -1,7 +1,6 @@
-<div id="board" style="margin:auto; border: 1px solid black; width: 100%; height: 96%; overflow: auto;"></div>
-<div align="center" id="tools">
-  <div style="width: 100%; border: 1px solid black;">
-  <table cellspacing="0" style="width: 100%; border: 1px solid black;">
+<div id="board" style="margin:auto; border: 1px solid black; width: 100%; height: 95%; overflow: auto;"></div>
+<div id="tools" style="margin:auto; border: 1px solid black; width: 100%; overflow: auto;">
+  <table cellspacing="0" style="width: 100%;">
     <tr>
       <td><button id="tool-0" onclick="changeTool(OPERATE);" style="background-color: cyan;" >Operate</button></td>
       <td><button id="tool-1" onclick="changeTool(SWITCH);" style="background-color: lightgrey;">Switch</button></td>
@@ -31,7 +30,7 @@
       <td>CELL:<input id="cell" type="text" style="margin-left: 10px; margin-right: 10px; width: 30px;" value="20"></td>
       <td><button id="reset" style="background-color: grey; color: white;" onclick="resetBoard();">Reset</button></td>
     </tr>
-  </table></div>
+  </table>
 </div>
 <script>
   const EMPTY = 0;

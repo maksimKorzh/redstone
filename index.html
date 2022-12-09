@@ -10,14 +10,14 @@
       <td><button id="tool-4" onclick="changeTool(WIRE);" style="background-color: lightgrey;">Wire</button></td>
       <td><button id="tool-5" onclick="changeTool(LIGHT);" style="background-color: lightgrey;">Light</button></td>
       <td><button id="tool-6" onclick="changeTool(ERASE);" style="background-color: lightgrey;">Erase</button></td>
-      <td><button id="tool-0" style="background-color: red; color: white;" onclick="startStop(this)">Start/Stop</button></td>
+      <td><button id="tool-7" style="background-color: red; color: white;" onclick="startStop()">Start/Stop</button></td>
       <td>
         <select id="tick" onchange="updateSpeed(parseInt(this.value));">
           <option value="100">100</option>
           <option value="200">200</option>
           <option value="300">300</option>
           <option value="400">400</option>
-          <option value="500">500</option>
+          <option value="500" selected="selected">500</option>
           <option value="600">600</option>
           <option value="700">700</option>
           <option value="800">800</option>
@@ -61,11 +61,9 @@
   var traversed = [];
   var isPowered = 0;
   var running = 0;
+  var speed = 0;
   
   function initBoard() {
-    SIZE = WIDTH * HEIGHT;
-    board = new Array(SIZE);
-
     for (let row = 0; row < HEIGHT; row++) {
       for (let col = 0; col < WIDTH; col++) {
         let square = row * WIDTH + col;
@@ -142,7 +140,7 @@
   }
   
   function traceSignal(square, direction) {
-    var tool = board[square];
+    let tool = board[square];
     if (tool == OFFBOARD) return;
     
     if (tool == INVERTER) {
@@ -211,41 +209,44 @@
       document.getElementById('tool-' + i).style.backgroundColor = (i == currentTool ? 'cyan' : 'lightgrey');
   }
   
-  function startStop(button) {
+  function startStop() {
     running ^= 1;
-    button.style.backgroundColor = running ? 'green' : 'red';
+    running == 1 ? start() : stop();
+  }
+  function start() {
+    document.getElementById('tool-7').style.backgroundColor = 'green';
+    speed = setInterval(function() {
+      renderBoard();
+      updateState();
+    }, TICK_DELAY);
+  }
+  
+  function stop() {
+    document.getElementById('tool-7').style.backgroundColor = 'red';
     for (let i = 0; i < SIZE; i++) board[i] &= TOOL;
+    clearInterval(speed);
     renderBoard();
     updateState();
   }
   
   function resetBoard() {
-    WIDTH = document.getElementById('width').value;
-    HEIGHT = document.getElementById('height').value;
+    stop();
+    WIDTH = parseInt(document.getElementById('width').value);
+    HEIGHT = parseInt(document.getElementById('height').value);
+    SIZE = WIDTH * HEIGHT
     CELL = document.getElementById('cell').value;
     initBoard();
     renderBoard();
   }
   
-  function run() {
-    speed = setInterval(function() {
-      if (running) {
-        renderBoard();
-        updateState();
-      }
-    }, TICK_DELAY);
-  }
-  
   function updateSpeed(value) {
+    stop();
     TICK_DELAY = value;
-    clearInterval(speed);
-    run();
+    start();
   }
   
   initBoard();
   renderBoard();
-  run();
-  
 </script>
 
 

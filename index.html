@@ -1,6 +1,7 @@
-<div id="board" style="margin:auto; border: 1px solid black; width: 100%; height: 97%; overflow: auto;"></div>
+<div id="board" style="margin:auto; border: 1px solid black; width: 100%; height: 96%; overflow: auto;"></div>
 <div align="center" id="tools">
-  <table cellspacing="0">
+  <div style="width: 100%; border: 1px solid black;">
+  <table cellspacing="0" style="width: 100%; border: 1px solid black;">
     <tr>
       <td><button id="tool-0" onclick="changeTool(OPERATE);" style="background-color: cyan;" >Operate</button></td>
       <td><button id="tool-1" onclick="changeTool(SWITCH);" style="background-color: lightgrey;">Switch</button></td>
@@ -10,8 +11,27 @@
       <td><button id="tool-5" onclick="changeTool(LIGHT);" style="background-color: lightgrey;">Light</button></td>
       <td><button id="tool-6" onclick="changeTool(ERASE);" style="background-color: lightgrey;">Erase</button></td>
       <td><button id="tool-0" style="background-color: red; color: white;" onclick="startStop(this)">Start/Stop</button></td>
+      <td>
+        <select id="tick" onchange="updateSpeed(parseInt(this.value));">
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="300">300</option>
+          <option value="400">400</option>
+          <option value="500">500</option>
+          <option value="600">600</option>
+          <option value="700">700</option>
+          <option value="800">800</option>
+          <option value="900">900</option>
+          <option value="1000">1000</option>
+        </select>
+      </td>
+      <td style="width: 30%; text-align: center;"><strong>BINARY LOGIC SIMULATOR</strong></td>
+      <td>WIDTH:<input id="width" type="text" style="margin-left: 10px; margin-right: 10px; width: 30px;" value="80"></td>
+      <td>HEIGHT:<input id="height" type="text" style="margin-left: 10px; margin-right: 10px; width: 30px;" value="40"></td>
+      <td>CELL:<input id="cell" type="text" style="margin-left: 10px; margin-right: 10px; width: 30px;" value="20"></td>
+      <td><button id="reset" style="background-color: grey; color: white;" onclick="resetBoard();">Reset</button></td>
     </tr>
-  </table>
+  </table></div>
 </div>
 <script>
   const EMPTY = 0;
@@ -28,12 +48,12 @@
   const TOOL = 15;
 
   var CELL = 20;
-  var WIDTH = 100;
-  var HEIGHT = 100;
+  var WIDTH = 80;
+  var HEIGHT = 40;
   var SIZE = WIDTH * HEIGHT;
   
-  var TICK_DELAY = 0;
-  var BUTTON_DELAY = 100;
+  var TICK_DELAY = 100;
+  var BUTTON_DELAY = 500;
   
   var board = new Array(SIZE);
   var tool = OPERATE;
@@ -43,6 +63,9 @@
   var running = 0;
   
   function initBoard() {
+    SIZE = WIDTH * HEIGHT;
+    board = new Array(SIZE);
+
     for (let row = 0; row < HEIGHT; row++) {
       for (let col = 0; col < WIDTH; col++) {
         let square = row * WIDTH + col;
@@ -196,15 +219,32 @@
     updateState();
   }
   
+  function resetBoard() {
+    WIDTH = document.getElementById('width').value;
+    HEIGHT = document.getElementById('height').value;
+    CELL = document.getElementById('cell').value;
+    initBoard();
+    renderBoard();
+  }
+  
+  function run() {
+    speed = setInterval(function() {
+      if (running) {
+        renderBoard();
+        updateState();
+      }
+    }, TICK_DELAY);
+  }
+  
+  function updateSpeed(value) {
+    TICK_DELAY = value;
+    clearInterval(speed);
+    run();
+  }
+  
   initBoard();
   renderBoard();
-  
-  setInterval(function() {
-    if (running) {
-      renderBoard();
-      updateState();
-    }
-  }, TICK_DELAY);
+  run();
   
 </script>
 

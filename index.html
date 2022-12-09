@@ -1,3 +1,4 @@
+<title>Binary Logic Simulator</title>
 <div id="board" style="margin:auto; border: 1px solid black; width: 100%; height: 95%; overflow: auto;"></div>
 <div id="tools" style="margin:auto; border: 1px solid black; width: 100%; overflow: auto;">
   <table cellspacing="0" style="width: 100%;">
@@ -24,7 +25,10 @@
           <option value="1000">1000</option>
         </select>
       </td>
-      <td style="width: 30%; text-align: center;"><strong>BINARY LOGIC SIMULATOR</strong></td>
+      <td style="width: 13%;"><textarea id="set" style="resize: none; width: 100%; height: 20px; margin: 0px;"></textarea></td>
+      <td><button onclick="setBoard();" style="width: 100%;">SET</button></td>
+      <td><button onclick="getBoard();" style="width: 100%;">GET</button></td>
+      <td style="width: 13%;"><textarea id="get" style="resize: none; width: 100%; height: 20px; margin: 0px;"></textarea></td>
       <td>WIDTH:<input id="width" type="text" style="margin-left: 10px; margin-right: 10px; width: 30px;" value="80"></td>
       <td>HEIGHT:<input id="height" type="text" style="margin-left: 10px; margin-right: 10px; width: 30px;" value="40"></td>
       <td>CELL:<input id="cell" type="text" style="margin-left: 10px; margin-right: 10px; width: 30px;" value="20"></td>
@@ -47,8 +51,8 @@
   const TOOL = 15;
 
   var CELL = 20;
-  var WIDTH = 80;
-  var HEIGHT = 40;
+  var WIDTH = 82;
+  var HEIGHT = 42;
   var SIZE = WIDTH * HEIGHT;
   
   var TICK_DELAY = 100;
@@ -230,14 +234,23 @@
   
   function resetBoard() {
     stop();
-    WIDTH = parseInt(document.getElementById('width').value);
-    HEIGHT = parseInt(document.getElementById('height').value);
+    WIDTH = parseInt(document.getElementById('width').value) + 2;
+    HEIGHT = parseInt(document.getElementById('height').value) + 2;
     SIZE = WIDTH * HEIGHT
     CELL = document.getElementById('cell').value;
     initBoard();
     renderBoard();
   }
   
+  function setBoard() {
+    board = JSON.parse(document.getElementById('set').value);
+    renderBoard();
+  }
+  
+  function getBoard() {
+    document.getElementById('get').value = JSON.stringify(board);
+  }
+
   function updateSpeed(value) {
     stop();
     TICK_DELAY = value;

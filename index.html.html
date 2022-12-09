@@ -1,0 +1,212 @@
+<div id="board" style="margin:auto; border: 1px solid black; width: 800px; height: 580px; overflow: auto;"></div>
+<div align="center" id="tools">
+  <table cellspacing="0">
+    <tr>
+      <td><button id="tool-0" onclick="changeTool(OPERATE);" style="background-color: cyan;" >Operate</button></td>
+      <td><button id="tool-1" onclick="changeTool(SWITCH);" style="background-color: lightgrey;">Switch</button></td>
+      <td><button id="tool-2" onclick="changeTool(BUTTON);" style="background-color: lightgrey;">Button</button></td>
+      <td><button id="tool-3" onclick="changeTool(INVERTER);" style="background-color: lightgrey;">Inverter</button></td>
+      <td><button id="tool-4" onclick="changeTool(WIRE);" style="background-color: lightgrey;">Wire</button></td>
+      <td><button id="tool-5" onclick="changeTool(LIGHT);" style="background-color: lightgrey;">Light</button></td>
+      <td><button id="tool-6" onclick="changeTool(ERASE);" style="background-color: lightgrey;">Erase</button></td>
+      <td><button id="tool-0" style="background-color: red; color: white;" onclick="startStop(this)">Start/Stop</button></td>
+    </tr>
+  </table>
+</div>
+<script>
+  const EMPTY = 0;
+  const OPERATE = 0;
+  const SWITCH = 1;
+  const BUTTON = 2;
+  const INVERTER = 3;
+  const WIRE = 4;
+  const LIGHT = 5;
+  const ERASE = 6;
+  const OFFBOARD = 8;
+  const POWERED = 32;
+  const MARKED = 64;
+  const TOOL = 15;
+
+  var CELL = 20;
+  var WIDTH = 100;
+  var HEIGHT = 100;
+  var SIZE = WIDTH * HEIGHT;
+  
+  var TICK_DELAY = 1000;
+  var BUTTON_DELAY = 2000;
+  
+  var board = new Array(SIZE);
+  var tool = OPERATE;
+  
+  var traversed = [];
+  var isPowered = 0;
+  var running = 0;
+  
+  function initBoard() {
+    for (let row = 0; row < HEIGHT; row++) {
+      for (let col = 0; col < WIDTH; col++) {
+        let square = row * WIDTH + col;
+        board[square] = EMPTY;
+        if (col == 0 || col == WIDTH-1 || row == 0 || row == HEIGHT-1) board[square] = OFFBOARD;
+      }
+    }
+  }
+  
+  function renderBoard() {
+    let boardHTML = '<table cellspacing="1" style="table-layout: fixed; width: ' + CELL * WIDTH + 'px">';
+    for (let row = 0; row < HEIGHT; row++) {
+      boardHTML += '<tr>';
+      for (let col = 0; col < WIDTH; col++) {
+        if (col == 0 || col == WIDTH-1 || row == 0 || row == HEIGHT-1) continue;
+        let square = row * WIDTH + col;
+        boardHTML += '<td id=' + square + ' \
+                          bgcolor="#dddddd" \
+                          style="padding: 0px; overflow:hidden; border: 0px; \
+                          width: ' + CELL + 'px; height: ' + CELL + 'px;" \
+                          onclick="clickSquare(this.id)">'
+                          + renderElement(square) +
+                          '</td>';
+      }
+      boardHTML += '</tr>';
+    }
+    boardHTML += '</table>'
+    document.getElementById('board').innerHTML = boardHTML;
+  }
+  
+  function renderElement(square) {
+    var render = '';
+    switch (board[square]) {
+      case SWITCH:
+      case (SWITCH | POWERED):
+        render = '<input type="checkbox" style="margin: 0px; width: 100%; height: 100%;" ' + 
+        ((board[square] & POWERED) ? 'checked' : '') +
+        ' onchange="board[' + square + '] ^= POWERED;"/>';
+        break;
+      
+      case BUTTON:
+      case (BUTTON | POWERED):
+        render = '<button style="margin: 0px; width: 100%; height: 100%" ' +
+        'onclick="board[' + square + '] ^= POWERED; \
+         setTimeout(function() {board[' + square + '] ^= POWERED; }, BUTTON_DELAY)"></button> ';
+        break;
+      
+      case INVERTER:
+      case INVERTER | POWERED:
+        render = '<input type="radio" style="margin: 0px; width: 100%; height: 100%;" ' + 
+        ((board[square] & POWERED) ? 'checked' : '') +
+        ' onchange="board[' + square + '] ^= POWERED;"/>';
+        break;
+      
+      case WIRE:
+      case WIRE | POWERED:
+        render = '<div style="margin: auto; width: 50%; height: 50%; background-color: '
+        + ((board[square] & POWERED) ? 'lightgreen' : 'darkgreen') +
+        ';"></div>';
+        break;
+      
+      case LIGHT:
+      case (LIGHT | POWERED):
+              render = '<div style="width: 100%; height: 100%; background-color: '
+              + ((board[square] & POWERED) ? 'red' : 'brown') +
+              ';"></div>';
+              break;
+              
+      case OFFBOARD: render = '<div style="width: 100%; height: 100%; background-color: darkred;"></div>'; break;
+
+    }
+    
+    return render;
+  }
+  
+  function traceSignal(square, direction) {
+    var tool = board[square];
+    if (tool == OFFBOARD) return;
+    
+    if (tool == INVERTER) {
+      if (direction == -WIDTH && !(board[square - direction] & POWERED))
+        board[square] |= POWERED;
+        return;
+    }
+    if (tool == (INVERTER | POWERED)) {
+      if (direction == -WIDTH && (board[square - direction] & POWERED)) board[square] &= TOOL;
+      if (direction == WIDTH && board[square - direction]) isPowered = 1;
+      return;
+    }
+    
+    if ((tool == (SWITCH | POWERED)) ||
+        (tool == (BUTTON | POWERED))) {
+      isPowered = 1;
+      return;
+    }
+    
+    if (tool == WIRE ||
+        tool == LIGHT ||
+        tool == INVERTER ||
+        tool == (INVERTER | POWERED) ||
+        tool == (WIRE | POWERED) ||
+        tool == (LIGHT | POWERED)) {
+      board[square] |= MARKED;
+      traversed.push(square);
+      traceSignal(square + 1, 1);
+      traceSignal(square - 1, -1);
+      traceSignal(square + WIDTH, WIDTH);
+      traceSignal(square - WIDTH, -WIDTH);
+    }
+  }
+  
+  function updatePower() {
+    for (let i = 0; i < traversed.length; i++) {
+      board[traversed[i]] &= TOOL;
+      if (isPowered) {
+        if ((board[traversed[i]] != INVERTER) && 
+             board[traversed[i]] != (INVERTER | POWERED)) board[traversed[i]] |= POWERED;
+      }
+      if (!isPowered) {
+        if ((board[traversed[i]] != INVERTER) && 
+             board[traversed[i]] != (INVERTER | POWERED)) board[traversed[i]] &= TOOL;
+      }
+    } traversed = []; isPowered = 0;
+  }
+  
+  function updateState() {
+    for (let square = 0; square < SIZE; square++) {
+      traceSignal(parseInt(square), 0);
+      updatePower();
+    }
+  }
+  
+  function clickSquare(square) {
+    if (tool == OPERATE) return;
+    else if (tool == ERASE) board[square] = EMPTY;
+    else board[square] = tool;
+    document.getElementById(square.toString()).innerHTML = renderElement(square);
+  }
+  
+  function changeTool(currentTool) {
+    tool = currentTool;
+    for (let i = 0; i < 7; i++)
+      document.getElementById('tool-' + i).style.backgroundColor = (i == currentTool ? 'cyan' : 'lightgrey');
+  }
+  
+  function startStop(button) {
+    running ^= 1;
+    button.style.backgroundColor = running ? 'green' : 'red';
+    for (let i = 0; i < SIZE; i++) board[i] &= TOOL;
+    renderBoard();
+    updateState();
+  }
+  
+  initBoard();
+  renderBoard();
+  
+  setInterval(function() {
+    if (running) {
+      renderBoard();
+      updateState();
+    }
+  }, TICK_DELAY);
+  
+</script>
+
+
+

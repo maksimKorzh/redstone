@@ -260,6 +260,10 @@
   }
 
   function updateSpeed(value) {
+    if (!running) {
+      TICK_DELAY = value;
+      return;
+    }
     stop();
     TICK_DELAY = value;
     start();

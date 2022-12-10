@@ -13,6 +13,7 @@
       <td><button id="tool-7" style="background-color: red; color: white;" onclick="startStop()">Start/Stop</button></td>
       <td>
         <select id="tick" onchange="updateSpeed(parseInt(this.value));">
+          <option value="0">Instant</option>
           <option value="100">100</option>
           <option value="200">200</option>
           <option value="300">300</option>
@@ -97,6 +98,14 @@
     document.getElementById('board').innerHTML = boardHTML;
   }
   
+  function quickRender() {
+    for (let square = 0; square < SIZE; square++) {
+      if (board[square] == OFFBOARD) continue;
+      let cell = document.getElementById(square);
+      if (board[square]) cell.innerHTML = renderElement(square);
+    }
+  }
+  
   function renderElement(square) {
     var render = '';
     switch (board[square]) {
@@ -137,9 +146,7 @@
               
       case OFFBOARD: render = '<div style="width: 100%; height: 100%; background-color: darkred;"></div>'; break;
 
-    }
-    
-    return render;
+    } return render;
   }
   
   function traceSignal(square, direction) {
@@ -151,6 +158,7 @@
         board[square] |= POWERED;
         return;
     }
+
     if (tool == (INVERTER | POWERED)) {
       if (direction == -WIDTH && (board[square - direction] & POWERED)) board[square] &= TOOL;
       if (direction == WIDTH && board[square - direction]) isPowered = 1;
@@ -219,7 +227,8 @@
   function start() {
     document.getElementById('tool-7').style.backgroundColor = 'green';
     speed = setInterval(function() {
-      renderBoard();
+      quickRender();
+      //renderBoard();
       updateState();
     }, TICK_DELAY);
   }
@@ -228,7 +237,7 @@
     document.getElementById('tool-7').style.backgroundColor = 'red';
     for (let i = 0; i < SIZE; i++) board[i] &= TOOL;
     clearInterval(speed);
-    renderBoard();
+    quickRender();
     updateState();
   }
   
@@ -244,7 +253,7 @@
   
   function setBoard() {
     board = JSON.parse(document.getElementById('set').value);
-    renderBoard();
+    quickRender();
   }
   
   function getBoard() {

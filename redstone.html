@@ -28,6 +28,7 @@
   
   // camera
   var camera = [0.0, 0.0, 0.0];
+  var lookDirection = [0.0, 0.0, 0.0];
   
   // projection
   var matrixProjected = matrixMakeProjection(90.0, HEIGHT / WIDTH, 0.1, 1000.0);
@@ -176,6 +177,11 @@
     return [ v1[0] * k, v1[1] * k, v1[2] * k ];
   }
 
+  // add vectors
+  function vectorAdd(v1, v2) {
+    return [ v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2] ];
+  }
+
   // subtract vectors
   function vectorSub(v1, v2) {
     return [ v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2] ];
@@ -220,12 +226,12 @@
   {
     // Calculate new forward direction
     let newForward = vectorSub(target, pos);
-    newForward = vectorNormalise(newForward);
+    newForward = vectorNormalize(newForward);
 
     // Calculate new Up direction
     let a = vectorMul(newForward, vectorDotProduct(up, newForward));
     let newUp = vectorSub(up, a);
-    newUp = vectorNormalise(newUp);
+    newUp = vectorNormalize(newUp);
 
     // New Right direction is easy, its just cross product
     let newRight = vectorCrossProduct(newUp, newForward);
@@ -304,25 +310,38 @@
 		matrixWorld = matrixMultiplyMatrix(matrixWorld, matrixTranslation); // Transform by translation
 
 		// Create "Point At" Matrix for camera
-		/*vec3d vUp = { 0,1,0 };
-		vec3d vTarget = { 0,0,1 };
-		mat4x4 matCameraRot = Matrix_MakeRotationY(fYaw);
-		vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
-		vTarget = Vector_Add(vCamera, vLookDir);
-		mat4x4 matCamera = Matrix_PointAt(vCamera, vTarget, vUp);
+		lookDirection = [0, 0, 1];
+		let up = [0,1,0];
+		let target = vectorAdd(camera, lookDirection);//[0,0,1];
+		
+		
+		
+		//let matrixCameraRotate = matrixMakeRotationY(fYaw);
+		//vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
+		//vTarget = Vector_Add(vCamera, vLookDir);
+		
+		let matrixCamera = matrixPointAt(camera, target, up);
 
 		// Make view matrix from camera
-		mat4x4 matView = Matrix_QuickInverse(matCamera);
+		let matrixView = matrixQuickInverse(matrixCamera);
 
 		// Store triagles for rastering later
-		vector<triangle> vecTrianglesToRaster;*/
+		//vector<triangle> vecTrianglesToRaster;
     
     for (let i = 0; i < cube.length; i++) {
       // define triangles
-      let triangleProjected = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
-      let triangleMesh = cube[i];
+      
       triangleRotatedZ = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
       triangleRotatedZX = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
+      
+      let triangleMesh = cube[i];
+      let triangleProjected = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
+      let triangleTransformed = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
+      let triangleViewed = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
+
+      triangleTransformed[0] = matrixMultiplyVector(matrixWorld, triangleMesh[0]);
+      triangleTransformed[1] = matrixMultiplyVector(matrixWorld, triangleMesh[1]);
+      triangleTransformed[2] = matrixMultiplyVector(matrixWorld, triangleMesh[2]);      
             
       // Rotate in Z-Axis
 			multiplyMatrixVector(triangleMesh[0], triangleRotatedZ[0], matrixRotateZ);
@@ -349,14 +368,26 @@
       line1 = vectorSub(triangleTranslated[1], triangleTranslated[0]);
       line2 = vectorSub(triangleTranslated[2], triangleTranslated[0]);
       
+      //line1 = vectorSub(triangleTransformed[1], triangleTransformed[0]);
+      //line2 = vectorSub(triangleTransformed[2], triangleTransformed[0]);
+      
       // It's normally normal to normalise the normal
       normal = vectorCrossProduct(line1, line2);
       normal = vectorNormalize(normal);
+      
+      // Get Ray from triangle to camera
+			let cameraRay = vectorSub(triangleTransformed[0], camera);
 
       // render only visible area
       if(normal[0] * (triangleTranslated[0][0] - camera[0]) + 
 			   normal[1] * (triangleTranslated[0][1] - camera[1]) +
 			   normal[2] * (triangleTranslated[0][2] - camera[2]) < 0) {
+			
+			/*if(normal[0] * (triangleTransformed[0][0] - camera[0]) + 
+			   normal[1] * (triangleTransformed[0][1] - camera[1]) +
+			   normal[2] * (triangleTransformed[0][2] - camera[2]) < 0) {*/
+			  
+			//if (vectorDotProduct(normal, cameraRay) < 0.0) {console.log('should render')
         
         // illumination
 				let lightDirection = [0.0, 1.0, -1.0];
@@ -370,7 +401,18 @@
 				// choose console colors as required (much easier with RGB)
 				let color = getColor(dp);
         
+        // convert world space to view space
+        /*triangleViewed[0] = matrixMultiplyVector(matrixView, triangleTransformed[0]);
+        triangleViewed[1] = matrixMultiplyVector(matrixView, triangleTransformed[1]);
+        triangleViewed[2] = matrixMultiplyVector(matrixView, triangleTransformed[2]);
+
         // project triangles from 3D --> 2D
+        triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangleViewed[0]);
+        triangleProjected[1] = matrixMultiplyVector(matrixProjected, triangleViewed[1]);
+        triangleProjected[2] = matrixMultiplyVector(matrixProjected, triangleViewed[2]);*/
+        
+        
+        
         multiplyMatrixVector(triangleTranslated[0], triangleProjected[0], matrixProjected);
         multiplyMatrixVector(triangleTranslated[1], triangleProjected[1], matrixProjected);
         multiplyMatrixVector(triangleTranslated[2], triangleProjected[2], matrixProjected);

@@ -35,30 +35,45 @@
   
   // mesh
   var cube = [
-    // south
-    [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]],
-    [[0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
+    // south                 x    y    z    w
+    [[0.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]],
+    [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0]],
     
     // east
-    [[1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0]],
-    [[1.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 0.0, 1.0]],
+    [[1.0, 0.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0]],
+    [[1.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [1.0, 0.0, 1.0, 1.0]],
     
     // north
-    [[1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]],
-    [[1.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 0.0, 1.0]],
+    [[1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0], [0.0, 1.0, 1.0, 1.0]],
+    [[1.0, 0.0, 1.0, 1.0], [0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]],
     
     // west
-    [[0.0, 0.0, 1.0], [0.0, 1.0, 1.0], [0.0, 1.0, 0.0]],
-    [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]],
+    [[0.0, 0.0, 1.0, 1.0], [0.0, 1.0, 1.0, 1.0], [0.0, 1.0, 0.0, 1.0]],
+    [[0.0, 0.0, 1.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 0.0, 1.0]],
     
     // top
-    [[0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
-    [[0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [1.0, 1.0, 0.0]],
+    [[0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]],
+    [[0.0, 1.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 0.0, 1.0]],
     
     // bottom
-    [[1.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 0.0]],
-    [[1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
+    [[1.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]],
+    [[1.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0]],
   ];
+  
+  // calculate model 'w'
+  function calculateW(i, m) {
+    return i[0] * m[0][3] + i[1] * m[1][3] + i[2] * m[2][3] + m[3][3];
+  }
+  
+  // create vertice
+  function createVector() {
+    return [0.0, 0.0, 0.0, 1.0];
+  }
+  
+  // create polygon
+  function createTriangle() {
+    return [[0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 1.0]];
+  }
   
   // create 4x4 matrix instance
   function createMatrix() {
@@ -72,10 +87,10 @@
 
   function matrixMultiplyVector(m, i) {
     var v = [0.0, 0.0, 0.0, 0.0];
-    v[0] = i[0] * m[0][0] + i[1] * m[1][0] + i[2] * m[2][0] + i.w * m[3][0];
-    v[1] = i[0] * m[0][1] + i[1] * m[1][1] + i[2] * m[2][1] + i.w * m[3][1];
-    v[2] = i[0] * m[0][2] + i[1] * m[1][2] + i[2] * m[2][2] + i.w * m[3][2];
-    v[3] = i[0] * m[0][3] + i[1] * m[1][3] + i[2] * m[2][3] + i.w * m[3][3];
+    v[0] = i[0] * m[0][0] + i[1] * m[1][0] + i[2] * m[2][0] + i[3] * m[3][0];
+    v[1] = i[0] * m[0][1] + i[1] * m[1][1] + i[2] * m[2][1] + i[3] * m[3][1];
+    v[2] = i[0] * m[0][2] + i[1] * m[1][2] + i[2] * m[2][2] + i[3] * m[3][2];
+    v[3] = i[0] * m[0][3] + i[1] * m[1][3] + i[2] * m[2][3] + i[3] * m[3][3];
     return v;
   }
 
@@ -175,6 +190,10 @@
   // mulyiply vectors
   function vectorMul(v1, k) {
     return [ v1[0] * k, v1[1] * k, v1[2] * k ];
+  }
+  
+  function vectorDiv(v1, k) {
+    return [ v1[0] / k, v1[1] / k, v1[2] / k ];
   }
 
   // add vectors
@@ -302,7 +321,7 @@
     
 
     let matrixTranslation = createMatrix();
-		matrixTranslation = matrixMakeTranslation(0.0, 0.0, 5.0);
+		matrixTranslation = matrixMakeTranslation(0.0, 0.0, 3.0);
 
 		let matrixWorld = createMatrix();
 		matrixWorld = matrixMakeIdentity();	// Form World Matrix
@@ -329,73 +348,43 @@
 		//vector<triangle> vecTrianglesToRaster;
     
     for (let i = 0; i < cube.length; i++) {
-      // define triangles
-      
-      triangleRotatedZ = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
-      triangleRotatedZX = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
-      
       let triangleMesh = cube[i];
-      let triangleProjected = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
-      let triangleTransformed = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
-      let triangleViewed = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]];
+      let triangleProjected = createTriangle();
+      let triangleTransformed = createTriangle();
+      let triangleViewed = createTriangle();
 
+      // world Matrix Transform
       triangleTransformed[0] = matrixMultiplyVector(matrixWorld, triangleMesh[0]);
       triangleTransformed[1] = matrixMultiplyVector(matrixWorld, triangleMesh[1]);
       triangleTransformed[2] = matrixMultiplyVector(matrixWorld, triangleMesh[2]);      
-            
-      // Rotate in Z-Axis
-			multiplyMatrixVector(triangleMesh[0], triangleRotatedZ[0], matrixRotateZ);
-			multiplyMatrixVector(triangleMesh[1], triangleRotatedZ[1], matrixRotateZ);
-			multiplyMatrixVector(triangleMesh[2], triangleRotatedZ[2], matrixRotateZ);
-
-			// Rotate in X-Axis
-			multiplyMatrixVector(triangleRotatedZ[0], triangleRotatedZX[0], matrixRotateX);
-			multiplyMatrixVector(triangleRotatedZ[1], triangleRotatedZX[1], matrixRotateX);
-			multiplyMatrixVector(triangleRotatedZ[2], triangleRotatedZX[2], matrixRotateX);
       
-      // offset into the screen
-			triangleTranslated = JSON.parse(JSON.stringify(triangleRotatedZX));
-			triangleTranslated[0][2] = triangleRotatedZX[0][2] + 3.0;
-			triangleTranslated[1][2] = triangleRotatedZX[1][2] + 3.0;
-			triangleTranslated[2][2] = triangleRotatedZX[2][2] + 3.0;
-      
-      // use Cross-Product to get surface normal
-			let normal = [0.0, 0.0, 0.0];
-			let line1 = [0.0, 0.0, 0.0];
-			let line2 = [0.0, 0.0, 0.0];
+      // calculate triangle Normal
+			let normal = createVector();
+			let line1 = createVector();
+			let line2 = createVector();
 			
-      // Use Cross-Product to get surface normal
-      line1 = vectorSub(triangleTranslated[1], triangleTranslated[0]);
-      line2 = vectorSub(triangleTranslated[2], triangleTranslated[0]);
+      // get lines either side of triangle
+      line1 = vectorSub(triangleTransformed[1], triangleTransformed[0]);
+      line2 = vectorSub(triangleTransformed[2], triangleTransformed[0]);
       
-      //line1 = vectorSub(triangleTransformed[1], triangleTransformed[0]);
-      //line2 = vectorSub(triangleTransformed[2], triangleTransformed[0]);
-      
-      // It's normally normal to normalise the normal
+      // take cross product of lines to get normal to triangle surface
       normal = vectorCrossProduct(line1, line2);
-      normal = vectorNormalize(normal);
       
+      // you normally need to normalise a normal!
+      normal = vectorNormalize(normal);
+
       // Get Ray from triangle to camera
 			let cameraRay = vectorSub(triangleTransformed[0], camera);
-
-      // render only visible area
-      if(normal[0] * (triangleTranslated[0][0] - camera[0]) + 
-			   normal[1] * (triangleTranslated[0][1] - camera[1]) +
-			   normal[2] * (triangleTranslated[0][2] - camera[2]) < 0) {
-			
-			/*if(normal[0] * (triangleTransformed[0][0] - camera[0]) + 
-			   normal[1] * (triangleTransformed[0][1] - camera[1]) +
-			   normal[2] * (triangleTransformed[0][2] - camera[2]) < 0) {*/
-			  
-			//if (vectorDotProduct(normal, cameraRay) < 0.0) {console.log('should render')
+      
+      
+      // If ray is aligned with normal, then triangle is visible
+			if (vectorDotProduct(normal, cameraRay) < 0.0) {
         
         // illumination
 				let lightDirection = [0.0, 1.0, -1.0];
-				let l = Math.sqrt(lightDirection[0]*lightDirection[0] + 
-				                  lightDirection[1]*lightDirection[1] +
-				                  lightDirection[2]*lightDirection[2]);
-
 				lightDirection = vectorNormalize(lightDirection);
+
+				// how "aligned" are light direction and triangle surface normal?
 				let dp = Math.max(0.1, vectorDotProduct(lightDirection, normal));
 
 				// choose console colors as required (much easier with RGB)
@@ -404,18 +393,27 @@
         // convert world space to view space
         /*triangleViewed[0] = matrixMultiplyVector(matrixView, triangleTransformed[0]);
         triangleViewed[1] = matrixMultiplyVector(matrixView, triangleTransformed[1]);
-        triangleViewed[2] = matrixMultiplyVector(matrixView, triangleTransformed[2]);
+        triangleViewed[2] = matrixMultiplyVector(matrixView, triangleTransformed[2]);*/
 
         // project triangles from 3D --> 2D
-        triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangleViewed[0]);
-        triangleProjected[1] = matrixMultiplyVector(matrixProjected, triangleViewed[1]);
-        triangleProjected[2] = matrixMultiplyVector(matrixProjected, triangleViewed[2]);*/
+        triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangleTransformed[0]);
+        triangleProjected[1] = matrixMultiplyVector(matrixProjected, triangleTransformed[1]);
+        triangleProjected[2] = matrixMultiplyVector(matrixProjected, triangleTransformed[2]);
         
-        
-        
-        multiplyMatrixVector(triangleTranslated[0], triangleProjected[0], matrixProjected);
-        multiplyMatrixVector(triangleTranslated[1], triangleProjected[1], matrixProjected);
-        multiplyMatrixVector(triangleTranslated[2], triangleProjected[2], matrixProjected);
+        // scale into view, we moved the normalising into cartesian space
+        // out of the matrix.vector function from the previous videos, so
+        // do this manually
+        triangleProjected[0] = vectorDiv(triangleProjected[0], triangleProjected[0][3]);
+        triangleProjected[1] = vectorDiv(triangleProjected[1], triangleProjected[1][3]);
+        triangleProjected[2] = vectorDiv(triangleProjected[2], triangleProjected[2][3]);
+
+        // X/Y are inverted so put them back
+        triangleProjected[0][0] *= -1.0;
+        triangleProjected[1][0] *= -1.0;
+        triangleProjected[2][0] *= -1.0;
+        triangleProjected[0][1] *= -1.0;
+        triangleProjected[1][1] *= -1.0;
+        triangleProjected[2][1] *= -1.0;
 
         // scale into view
         triangleProjected[0][0] += 1.0; triangleProjected[0][1] += 1.0;

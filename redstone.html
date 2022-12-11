@@ -64,6 +64,42 @@
     [[1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
   ];
   
+  // matrix rotation X
+  function matrixMakeRotationX(angleRad) {
+    var matrix = [
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+    ];
+    
+    matrix[0][0] = 1.0;
+    matrix[1][1] = Math.cos(angleRad);
+    matrix[1][2] = Math.sin(angleRad);
+    matrix[2][1] = -Math.sin(angleRad);
+    matrix[2][2] = Math.cos(angleRad);
+    matrix[3][3] = 1.0;
+    return matrix;
+  }
+  
+  // matrix rotation Z
+  function matrixMakeRotationZ(angleRad) {
+    var matrix = [
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+    ];
+
+    matrix[0][0] = Math.cos(angleRad);
+    matrix[0][1] = Math.sin(angleRad);
+    matrix[1][0] = -Math.sin(angleRad);
+    matrix[1][1] = Math.cos(angleRad);
+    matrix[2][2] = 1.0;
+    matrix[3][3] = 1.0;
+    return matrix;
+  }
+  
   // matrix multiplication
   function multiplyMatrixVector(i, o, m) {
     o[0] = i[0] * m[0][0] + i[1] * m[1][0] + i[2] * m[2][0] + m[3][0];
@@ -203,22 +239,8 @@
     
     // Set up rotation matrices
 		viewAngle += 0.01;
-
-		// Rotation Z
-		rotateZ = [
-		  [Math.cos(viewAngle), Math.sin(viewAngle), 0.0, 0.0],
-		  [-Math.sin(viewAngle), Math.cos(viewAngle), 0.0, 0.0],
-		  [0.0, 0.0, 1.0, 0.0],
-		  [0.0, 0.0, 0.0, 1.0],
-		];
-		
-		// Rotation X
-		rotateX = [
-		  [1.0, 0.0, 0.0, 0.0],
-		  [0.0, Math.cos(viewAngle * 0.5), Math.sin(viewAngle * 0.5), 0.0],
-		  [0.0, -Math.sin(viewAngle * 0.5), Math.cos(viewAngle * 0.5), 0.0],
-		  [0.0, 0.0, 0.0, 1.0],
-		];
+    rotateZ = matrixMakeRotationZ(viewAngle * 0.5);
+    rotateX = matrixMakeRotationX(viewAngle);
     
     for (let i = 0; i < cube.length; i++) {
       // define triangles
@@ -249,9 +271,6 @@
 			let line2 = [0.0, 0.0, 0.0];
 			
       // Use Cross-Product to get surface normal
-      
-      //line1 = vectorSub(triangleTransformed[1], triangleTransformed[0]);
-      //line2 = vectorSub(triangleTransformed[2], triangleTransformed[0]);
       line1 = vectorSub(triangleTranslated[1], triangleTranslated[0]);
       line2 = vectorSub(triangleTranslated[2], triangleTranslated[0]);
       

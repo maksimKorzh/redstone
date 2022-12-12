@@ -241,11 +241,11 @@
   // clip triangles
   function triangleClipAgainstPlane(plane_p, plane_n, in_tri, out_tri1, out_tri2) {
     // Make sure plane normal is indeed normal
-    plane_n = vectorNormalise(plane_n);
+    plane_n = vectorNormalize(plane_n);
 
     // Return signed shortest distance from point to plane, plane normal must be normalised
     function dist(p) {
-      let n = vectorNormalise(p);
+      let n = vectorNormalize(p);
       return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - vectorDotProduct(plane_n, plane_p));
     };
 
@@ -257,9 +257,9 @@
     let nOutsidePointCount = 0;
 
     // Get signed distance of each point in triangle to plane
-    let d0 = dist(in_tri.p[0]);
-    let d1 = dist(in_tri.p[1]);
-    let d2 = dist(in_tri.p[2]);
+    let d0 = dist(in_tri[0]);
+    let d1 = dist(in_tri[1]);
+    let d2 = dist(in_tri[2]);
 
     if (d0 >= 0) { inside_points[nInsidePointCount++] = in_tri[0]; }
     else { outside_points[nOutsidePointCount++] = in_tri[0]; }
@@ -480,7 +480,7 @@
 		let matrixView = matrixQuickInverse(matrixCamera);
 
 		// Store triagles for rastering later
-		//vector<triangle> vecTrianglesToRaster;
+		let trianglesToRaster = [];
     
     for (let i = 0; i < cube.length; i++) {
       let triangleMesh = cube[i];
@@ -530,6 +530,13 @@
         triangleViewed[1] = matrixMultiplyVector(matrixView, triangleTransformed[1]);
         triangleViewed[2] = matrixMultiplyVector(matrixView, triangleTransformed[2]);
 
+        // Clip Viewed Triangle against near plane, this could form two additional
+        // additional triangles. 
+        let clippedTriangles = 0;
+        let clipped = [createTriangle(), createTriangle()];
+        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 0.1], [0.0, 0.0, 1.0], triangleViewed, clipped[0], clipped[1]);
+////////////////
+
         // project triangles from 3D --> 2D
         triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangleViewed[0]);
         triangleProjected[1] = matrixMultiplyVector(matrixProjected, triangleViewed[1]);
@@ -560,19 +567,39 @@
         triangleProjected[1][1] *= 0.5 * HEIGHT;
         triangleProjected[2][0] *= 0.5 * WIDTH;
         triangleProjected[2][1] *= 0.5 * HEIGHT;
-
-        // shading
-        fillTriangle(triangleProjected[0][0], triangleProjected[0][1],
-          triangleProjected[1][0], triangleProjected[1][1],
-          triangleProjected[2][0], triangleProjected[2][1],
-          color);
         
-        // triangles
-        /*drawTriangle(triangleProjected[0][0], triangleProjected[0][1],
-          triangleProjected[1][0], triangleProjected[1][1],
-          triangleProjected[2][0], triangleProjected[2][1],
-          'Black');*/
+        // Store triangle for sorting
+        trianglesToRaster.push([triangleProjected, color]);
       }
+    }
+    
+    // Sort triangles from back to front
+		/*sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle &t1, triangle &t2)
+		{
+			float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
+			float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
+			return z1 > z2;
+		});*/
+		
+		// 
+		
+		// Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
+		for (let i = 0; i < trianglesToRaster.length; i++) {
+		  let polygon = trianglesToRaster[i][0];
+		  let color = trianglesToRaster[i][1];
+		  let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
+		  
+		  // shading
+      fillTriangle(polygon[0][0], polygon[0][1],
+        polygon[1][0], polygon[1][1],
+        polygon[2][0], polygon[2][1],
+        order/*color*/);
+      
+      // triangles
+      /*drawTriangle(triangleProjected[0][0], triangleProjected[0][1],
+        triangleProjected[1][0], triangleProjected[1][1],
+        triangleProjected[2][0], triangleProjected[2][1],
+        'Black');*/
     }
     
     // infinite loop

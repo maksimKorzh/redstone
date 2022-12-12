@@ -29,6 +29,7 @@
   // camera
   var camera = [0.0, 0.0, 0.0];
   var lookDirection = [0.0, 0.0, 0.0];
+  var Yaw = 0;
   
   // projection
   var matrixProjected = matrixMakeProjection(90.0, HEIGHT / WIDTH, 0.1, 1000.0);
@@ -77,11 +78,11 @@
   
   // create 4x4 matrix instance
   function createMatrix() {
-    return matrix = [
+    return [
       [0.0, 0.0, 0.0, 0.0],
       [0.0, 0.0, 0.0, 0.0],
       [0.0, 0.0, 0.0, 0.0],
-      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0]
     ];
   }
 
@@ -117,7 +118,7 @@
   
   // matrix rotation Y
   function matrixMakeRotationY(angleRad) {
-    var matrix = createMatrix();
+    var matrix = createMatrix();    
     matrix[0][0] = Math.cos(angleRad);
     matrix[0][2] = Math.sin(angleRad);
     matrix[2][0] = -Math.sin(angleRad);
@@ -299,11 +300,21 @@
   // move camera
   document.onkeydown = function(event) {
     switch (event.keyCode) {
-      case 38: camera[1] += 0.1; break;         /* arrow up               */
-      case 40: camera[1] -= 0.1; break;         /* arrow down             */
-      //case 37: playerMoveAngle = 1; break;                      /* arrow left             */
-      //case 39: playerMoveAngle = -1; break;                     /* arrow right            */
-      //case 16: showMap = true; break;                           /* left shift (show map)  */
+      case 38: camera[1] += 0.1; break;         /* arrow up     */
+      case 40: camera[1] -= 0.1; break;         /* arrow down   */
+      case 37: camera[0] += 0.1; break;         /* arrow left   */
+      case 39: camera[0] -= 0.1; break;         /* arrow right  */
+      case 65: Yaw -= 0.1; break;               /* 'a'          */
+      case 68: Yaw += 0.01; break;              /* 'b'          */
+      case 87:
+        let forward = vectorMul(lookDirection, 0.1);  /* 'w'    */
+        camera = vectorAdd(camera, forward);
+        break;
+      case 83: { 
+        let forward = vectorMul(lookDirection, 0.1);  /* 's'    */
+        camera = vectorSub(camera, forward);
+        break;
+      }
     }
   }
   
@@ -350,18 +361,15 @@
 		matrixWorld = matrixMultiplyMatrix(matrixWorld, matrixTranslation); // Transform by translation
 
 		// Create "Point At" Matrix for camera
-		lookDirection = [0, 0, 1];
 		let up = [0,1,0];
-		let target = vectorAdd(camera, lookDirection);//[0,0,1];
-		
-		let matrixCamera = matrixPointAt(camera, target, up);		
+		let target = [0,0,1,1];
+		let matrixCameraRotate = matrixMakeRotationY(Yaw);
+		lookDirection = matrixMultiplyVector(matrixCameraRotate, target);
+		target = vectorAdd(camera, lookDirection);
+		let matrixCamera = matrixPointAt(camera, target, up);
 		
 		// Make view matrix from camera
 		let matrixView = matrixQuickInverse(matrixCamera);
-		
-		//let matrixCameraRotate = matrixMakeRotationY(fYaw);
-		//vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
-		//vTarget = Vector_Add(vCamera, vLookDir);
 
 		// Store triagles for rastering later
 		//vector<triangle> vecTrianglesToRaster;

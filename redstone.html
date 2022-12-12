@@ -295,6 +295,27 @@
     let color = parseInt(dp*100) + 100;
     return 'rgb(' + color + ', ' + color + ', ' + color + ')';
   }
+  
+  // move camera
+  document.onkeydown = function(event) {
+    switch (event.keyCode) {
+      case 38: camera[1] += 0.1; break;         /* arrow up               */
+      case 40: camera[1] -= 0.1; break;         /* arrow down             */
+      //case 37: playerMoveAngle = 1; break;                      /* arrow left             */
+      //case 39: playerMoveAngle = -1; break;                     /* arrow right            */
+      //case 16: showMap = true; break;                           /* left shift (show map)  */
+    }
+  }
+  
+  document.onkeyup = function(event) {
+    /*switch (event.keyCode) {
+      case 38:
+      case 40: playerMoveX = 0; playerMoveY = 0; break;
+      case 37:
+      case 39: playerMoveAngle = 0; break;
+      case 16: showMap = false; break;
+    }*/
+  } 
 
   // game loop
   function gameLoop() {
@@ -315,7 +336,7 @@
     context.fillRect(0, 0, canvas.width, canvas.height);
     
     // Set up rotation matrices
-		viewAngle += 0.01;
+		//viewAngle += 0.01;
     matrixRotateZ = matrixMakeRotationZ(viewAngle * 0.5);
     matrixRotateX = matrixMakeRotationX(viewAngle);
     
@@ -333,16 +354,14 @@
 		let up = [0,1,0];
 		let target = vectorAdd(camera, lookDirection);//[0,0,1];
 		
+		let matrixCamera = matrixPointAt(camera, target, up);		
 		
+		// Make view matrix from camera
+		let matrixView = matrixQuickInverse(matrixCamera);
 		
 		//let matrixCameraRotate = matrixMakeRotationY(fYaw);
 		//vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
 		//vTarget = Vector_Add(vCamera, vLookDir);
-		
-		let matrixCamera = matrixPointAt(camera, target, up);
-
-		// Make view matrix from camera
-		let matrixView = matrixQuickInverse(matrixCamera);
 
 		// Store triagles for rastering later
 		//vector<triangle> vecTrianglesToRaster;
@@ -391,14 +410,14 @@
 				let color = getColor(dp);
         
         // convert world space to view space
-        /*triangleViewed[0] = matrixMultiplyVector(matrixView, triangleTransformed[0]);
+        triangleViewed[0] = matrixMultiplyVector(matrixView, triangleTransformed[0]);
         triangleViewed[1] = matrixMultiplyVector(matrixView, triangleTransformed[1]);
-        triangleViewed[2] = matrixMultiplyVector(matrixView, triangleTransformed[2]);*/
+        triangleViewed[2] = matrixMultiplyVector(matrixView, triangleTransformed[2]);
 
         // project triangles from 3D --> 2D
-        triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangleTransformed[0]);
-        triangleProjected[1] = matrixMultiplyVector(matrixProjected, triangleTransformed[1]);
-        triangleProjected[2] = matrixMultiplyVector(matrixProjected, triangleTransformed[2]);
+        triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangleViewed[0]);
+        triangleProjected[1] = matrixMultiplyVector(matrixProjected, triangleViewed[1]);
+        triangleProjected[2] = matrixMultiplyVector(matrixProjected, triangleViewed[2]);
         
         // scale into view, we moved the normalising into cartesian space
         // out of the matrix.vector function from the previous videos, so

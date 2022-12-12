@@ -290,7 +290,7 @@
     // smaller output triangles if required. There are four possible
     // outcomes...
 
-    if (nInsidePointCount == 0) {
+    if (nInsidePointCount == 0) { console.log('invisible');
       // All points lie on the outside of plane, so clip whole triangle
       // It ceases to exist
       return 0; // No returned triangles are valid
@@ -306,7 +306,7 @@
       return 1; // Just the one returned original triangle is valid
     }
 
-    if (nInsidePointCount == 1 && nOutsidePointCount == 2) {
+    if (nInsidePointCount == 1 && nOutsidePointCount == 2) {//console.log('clipped i1 o2');
       // Triangle should be clipped. As two points lie outside
       // the plane, the triangle simply becomes a smaller triangle
 
@@ -325,7 +325,7 @@
       return 1; // Return the newly formed single triangle
     }
 
-    if (nInsidePointCount == 2 && nOutsidePointCount == 1) {
+    if (nInsidePointCount == 2 && nOutsidePointCount == 1) {//console.log('clipped i2 o1');
       // Triangle should be clipped. As two points lie inside the plane,
       // the clipped triangle becomes a "quad". Fortunately, we can
       // represent a quad with two new triangles

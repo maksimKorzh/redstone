@@ -85,7 +85,24 @@
       [0.0, 0.0, 0.0, 0.0]
     ];
   }
+  
+  // sort triangles
+  function sortTriangles(currentCount, triangles) {
+    for (let nextCount = currentCount + 1; nextCount < triangles.length; nextCount++) {
+      let currentTriangle = triangles[currentCount][0];
+      let nextTriangle = triangles[nextCount][0];
+      let z1 = (currentTriangle[0][2] + currentTriangle[1][2] + currentTriangle[2][2]) / 3.0;
+			let z2 = (nextTriangle[0][2] + nextTriangle[1][2] + nextTriangle[2][2]) / 3.0;
 
+      if (z1 < z2) {
+        let temp = triangles[currentCount];
+        triangles[currentCount] = triangles[nextCount];
+        triangles[nextCount] = temp;
+      }
+    }
+  }
+  
+  // multiply matrix by vector
   function matrixMultiplyVector(m, i) {
     var v = [0.0, 0.0, 0.0, 0.0];
     v[0] = i[0] * m[0][0] + i[1] * m[1][0] + i[2] * m[2][0] + i[3] * m[3][0];
@@ -94,7 +111,8 @@
     v[3] = i[0] * m[0][3] + i[1] * m[1][3] + i[2] * m[2][3] + i[3] * m[3][3];
     return v;
   }
-
+  
+  // matrix identity
   function matrixMakeIdentity() {
     var matrix = createMatrix();
     matrix[0][0] = 1.0;
@@ -534,7 +552,7 @@
         // additional triangles. 
         let clippedTriangles = 0;
         let clipped = [createTriangle(), createTriangle()];
-        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 0.1], [0.0, 0.0, 1.0], triangleViewed, clipped[0], clipped[1]);
+        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 0.1, 0.1], [0.0, 0.0, 1.0, 0.1], triangleViewed, clipped[0], clipped[1]);
 ////////////////
 
         // project triangles from 3D --> 2D
@@ -571,29 +589,22 @@
         // Store triangle for sorting
         trianglesToRaster.push([triangleProjected, color]);
       }
-    }
-    
-    // Sort triangles from back to front
-		/*sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle &t1, triangle &t2)
-		{
-			float z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0f;
-			float z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0f;
-			return z1 > z2;
-		});*/
-		
-		// 
+    } 
 		
 		// Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
 		for (let i = 0; i < trianglesToRaster.length; i++) {
+		  // Sort triangles from back to front
+		  sortTriangles(i, trianglesToRaster)
+		  
 		  let polygon = trianglesToRaster[i][0];
 		  let color = trianglesToRaster[i][1];
-		  let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
+		  //let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
 		  
 		  // shading
       fillTriangle(polygon[0][0], polygon[0][1],
         polygon[1][0], polygon[1][1],
         polygon[2][0], polygon[2][1],
-        order/*color*/);
+        color);
       
       // triangles
       /*drawTriangle(triangleProjected[0][0], triangleProjected[0][1],

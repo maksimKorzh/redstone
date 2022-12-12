@@ -1,5 +1,6 @@
 <style>html, body, canvas { margin: 0px; padding: 0px; }</style>
 <canvas id="screen" style="width: 100%; height: 100%"/>
+<script src="axis.js"></script>
 <script>
   // Rasterizer displaying rotating cube, port of One Lone Coder's C++ 3D engine tutorials's
 
@@ -34,8 +35,8 @@
   // projection
   var matrixProjected = matrixMakeProjection(90.0, HEIGHT / WIDTH, 0.1, 1000.0);
   
-  // mesh
-  var cube = [
+  // cube
+  var mesh = [
     // south                 x    y    z    w
     [[0.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]],
     [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0]],
@@ -60,6 +61,51 @@
     [[1.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]],
     [[1.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0]],
   ];
+  
+  // load model from OBJ file
+  function loadFromObj() {
+    // since this is a pure front-end implementation we are
+    // using variables stored in other JS files to load models
+    // from, so feel free to add new models (assuming you're)
+    // exporting them likeOne Lone Coder did in his tutorial.
+    
+    // pick up model to load (should be stored as a variable!)
+    let model = axis;
+    
+    // split into lines
+    let lines = model.split('\n')
+    
+    // init list of vertices
+    let vertices = [];
+    
+    // init list of polygons
+    let polygons = [];
+    
+    // loop over lines
+    for (let l = 0; l < lines.length; l++) {
+      let line = lines[l].trim();
+      
+      // populate vertices
+      if (line[0] == 'v') {
+        let x = parseFloat(line.split(' ')[1]);
+        let y = parseFloat(line.split(' ')[2]);
+        let z = parseFloat(line.split(' ')[3]);
+        vertices.push([x, y, z, 1.0])
+      }
+      
+      // populate polygons
+      if (line[0] == 'f') {
+        let vectorX = parseInt(line.split(' ')[1]);
+        let vectorY = parseInt(line.split(' ')[2]);
+        let vectorZ = parseInt(line.split(' ')[3]);
+        polygons.push([vertices[vectorX-1], vertices[vectorY-1], vertices[vectorZ-1]]);
+      }
+    }
+    
+    // init mesh deepcopy
+    //console.log(polygons);
+    mesh = JSON.parse(JSON.stringify(polygons));
+  }
   
   // calculate model 'w'
   function calculateW(i, m) {
@@ -208,21 +254,21 @@
   
   // mulyiply vectors
   function vectorMul(v1, k) {
-    return [ v1[0] * k, v1[1] * k, v1[2] * k ];
+    return [ v1[0] * k, v1[1] * k, v1[2] * k, 1.0 ];
   }
   
   function vectorDiv(v1, k) {
-    return [ v1[0] / k, v1[1] / k, v1[2] / k ];
+    return [ v1[0] / k, v1[1] / k, v1[2] / k, 1.0 ];
   }
 
   // add vectors
   function vectorAdd(v1, v2) {
-    return [ v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2] ];
+    return [ v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2], 1.0 ];
   }
 
   // subtract vectors
   function vectorSub(v1, v2) {
-    return [ v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2] ];
+    return [ v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2], 1.0 ];
   }
   
   // vector dot product
@@ -306,7 +352,7 @@
       return 1; // Just the one returned original triangle is valid
     }
 
-    if (nInsidePointCount == 1 && nOutsidePointCount == 2) {
+    if (nInsidePointCount == 1 && nOutsidePointCount == 2) {//console.log('clip i1 o2');
       // Triangle should be clipped. As two points lie outside
       // the plane, the triangle simply becomes a smaller triangle
 
@@ -328,7 +374,7 @@
       return 1; // Return the newly formed single triangle
     }
 
-    if (nInsidePointCount == 2 && nOutsidePointCount == 1) {
+    if (nInsidePointCount == 2 && nOutsidePointCount == 1) {//console.log('clip i2 o2');
       // Triangle should be clipped. As two points lie inside the plane,
       // the clipped triangle becomes a "quad". Fortunately, we can
       // represent a quad with two new triangles
@@ -502,8 +548,8 @@
 		// Store triagles for rastering later
 		let trianglesToRaster = [];
     
-    for (let i = 0; i < cube.length; i++) {
-      let triangleMesh = cube[i];
+    for (let i = 0; i < mesh.length; i++) {
+      let triangleMesh = mesh[i];
       let triangleProjected = createTriangle();
       let triangleTransformed = createTriangle();
       let triangleViewed = createTriangle();
@@ -553,11 +599,11 @@
         // Clip Viewed Triangle against near plane, this could form two additional
         // additional triangles. 
         let clippedTriangles = 0;
-        let clipped = [createTriangle(), createTriangle()]; //console.log(triangleViewed)
-        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 0.1, 1.0], [0.0, 0.0, 1.0, 1.0], triangleViewed, clipped[0], clipped[1], color);
+        let clipped = [createTriangle(), createTriangle()]; //console.log(clipped)
+        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 2.1, 1.0], [0.0, 0.0, 1.0, 1.0], triangleViewed, clipped[0], clipped[1], color);
 
         // We may end up with multiple triangles form the clip, so project as required
-        for (let n = 0; n < clippedTriangles; n++) {//console.log(clipped)          
+        for (let n = 0; n < clippedTriangles; n++) {        
           triangleProjected[0] = matrixMultiplyVector(matrixProjected, clipped[n][0]);
           triangleProjected[1] = matrixMultiplyVector(matrixProjected, clipped[n][1]);
           triangleProjected[2] = matrixMultiplyVector(matrixProjected, clipped[n][2]);
@@ -568,7 +614,7 @@
           triangleProjected[0] = vectorDiv(triangleProjected[0], triangleProjected[0][3]);
           triangleProjected[1] = vectorDiv(triangleProjected[1], triangleProjected[1][3]);
           triangleProjected[2] = vectorDiv(triangleProjected[2], triangleProjected[2][3]);
-
+ 
           // X/Y are inverted so put them back
           triangleProjected[0][0] *= -1.0;
           triangleProjected[1][0] *= -1.0;
@@ -588,14 +634,13 @@
           triangleProjected[1][1] *= 0.5 * HEIGHT;
           triangleProjected[2][0] *= 0.5 * WIDTH;
           triangleProjected[2][1] *= 0.5 * HEIGHT;
-          
+          //console.log(triangleProjected);
           // Store triangle for sorting
           trianglesToRaster.push([triangleProjected, color]);
         }
       }
     } 
-		
-		let listTriangles = [];
+
 		// Loop through all transformed, viewed, projected, and sorted triangles
 		for (let i = 0; i < trianglesToRaster.length; i++) {
 		  // Sort triangles from back to front
@@ -608,17 +653,18 @@
       //  ensure we only test new triangles generated against planes
       let triToRaster = trianglesToRaster[i];
       let clipped = [createTriangle(), createTriangle()];
+      let listTriangles = [];
       let color = [trianglesToRaster[i][1][0]];
       
       listTriangles.push(triToRaster);
       let newTriangles = 1;
       
-      /*for (let p = 0; p < 4; p++) {//console.log(trianglesToRaster[0]);
+      for (let p = 0; p < 4; p++) {//console.log(trianglesToRaster[0]);
         let nTrisToAdd = 0;
         while (newTriangles > 0) {
           // Take triangle from front of queue
-          let test = listTriangles[0][0];//console.log(test)
-          listTriangles.shift();
+          let test = listTriangles[0][0];
+          //listTriangles.shift(); //console.log(test)
           newTriangles--;          
 
           // Clip it against a plane. We only need to test each 
@@ -636,11 +682,13 @@
           // Clipping may yield a variable number of triangles, so
           // add these new ones to the back of the queue for subsequent
           // clipping against next planes
+          
+          //console.log(nTrisToAdd)
           for (let w = 0; w < nTrisToAdd; w++)
             listTriangles.push(clipped[w]);
         }
         newTriangles = listTriangles.length;
-      }*/
+      }
 		  
 		  // Draw originally sits here for some unknown reason...
 		  // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
@@ -674,6 +722,10 @@
     context.font = '10px Monospace';
     context.fillText('FPS: ' + fps_rate, 0, 20);
     
-  } window.onload = function() { gameLoop(); }
+  } window.onload = function() {
+    // load 3D model (Cube mesh is default if commented out)
+    loadFromObj();
+    gameLoop();
+  }
   
 </script>

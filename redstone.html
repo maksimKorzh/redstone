@@ -578,9 +578,10 @@
           triangleProjected[2][1] *= -1.0;
 
           // scale into view
-          triangleProjected[0][0] += 1.0; triangleProjected[0][1] += 1.0;
-          triangleProjected[1][0] += 1.0; triangleProjected[1][1] += 1.0;
-          triangleProjected[2][0] += 1.0; triangleProjected[2][1] += 1.0;
+          let offsetView = [1.0 ,1.0, 0.0, 1.0];
+					triangleProjected[0] = vectorAdd(triangleProjected[0], offsetView);
+					triangleProjected[1] = vectorAdd(triangleProjected[1], offsetView);
+					triangleProjected[2] = vectorAdd(triangleProjected[2], offsetView);
           triangleProjected[0][0] *= 0.5 * WIDTH;
           triangleProjected[0][1] *= 0.5 * HEIGHT;
           triangleProjected[1][0] *= 0.5 * WIDTH;

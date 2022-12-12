@@ -257,7 +257,7 @@
   }
   
   // clip triangles
-  function triangleClipAgainstPlane(plane_p, plane_n, in_tri, out_tri1, out_tri2) {
+  function triangleClipAgainstPlane(plane_p, plane_n, in_tri, out_tri1, out_tri2, color) {
     // Make sure plane normal is indeed normal
     plane_n = vectorNormalize(plane_n);
 
@@ -290,7 +290,7 @@
     // smaller output triangles if required. There are four possible
     // outcomes...
 
-    if (nInsidePointCount == 0) { console.log('invisible');
+    if (nInsidePointCount == 0) {
       // All points lie on the outside of plane, so clip whole triangle
       // It ceases to exist
       return 0; // No returned triangles are valid
@@ -302,11 +302,11 @@
       for (let i = 0; i < 3; i++)
         for (let j = 0; j < 4; j++)
           out_tri1[i][j] = in_tri[i][j]
-      
+
       return 1; // Just the one returned original triangle is valid
     }
 
-    if (nInsidePointCount == 1 && nOutsidePointCount == 2) {//console.log('clipped i1 o2');
+    if (nInsidePointCount == 1 && nOutsidePointCount == 2) {
       // Triangle should be clipped. As two points lie outside
       // the plane, the triangle simply becomes a smaller triangle
 
@@ -316,6 +316,9 @@
 
       // The inside point is valid, so keep that...
       out_tri1[0] = inside_points[0];
+      
+      // debug clipping with color
+      color[0] = 'rgb(100,0,0)';
 
       // but the two new points are at the locations where the 
       // original sides of the triangle (lines) intersect with the plane
@@ -325,18 +328,14 @@
       return 1; // Return the newly formed single triangle
     }
 
-    if (nInsidePointCount == 2 && nOutsidePointCount == 1) {//console.log('clipped i2 o1');
+    if (nInsidePointCount == 2 && nOutsidePointCount == 1) {
       // Triangle should be clipped. As two points lie inside the plane,
       // the clipped triangle becomes a "quad". Fortunately, we can
       // represent a quad with two new triangles
 
-      // Copy appearance info to new triangles
-      //out_tri1.col =  in_tri.col;
-      //out_tri1.sym = in_tri.sym;
-
-      //out_tri2.col =  in_tri.col;
-      //out_tri2.sym = in_tri.sym;
-
+      // debug clipping with color
+      color[0] = 'rgb(0,100,0)';
+      
       // The first triangle consists of the two inside points and a new
       // point determined by the location where one side of the triangle
       // intersects with the plane
@@ -431,7 +430,7 @@
     switch (event.keyCode) {
       case 38: camera[1] += 0.1; break;         /* arrow up     */
       case 40: camera[1] -= 0.1; break;         /* arrow down   */
-      case 37: camera[0] += 0.1; break;         /* arrow left   */
+      case 37: camera[0] += 0.1; break;         /* arrow left   TODO: not working properly! */
       case 39: camera[0] -= 0.1; break;         /* arrow right  */
       case 65: Yaw -= 0.1; break;               /* 'a'          */
       case 68: Yaw += 0.01; break;              /* 'b'          */
@@ -544,7 +543,7 @@
 				let dp = Math.max(0.1, vectorDotProduct(lightDirection, normal));
 
 				// choose console colors as required (much easier with RGB)
-				let color = getColor(dp);
+				let color = [getColor(dp)];
         
         // convert world space to view space
         triangleViewed[0] = matrixMultiplyVector(matrixView, triangleTransformed[0]);
@@ -554,19 +553,11 @@
         // Clip Viewed Triangle against near plane, this could form two additional
         // additional triangles. 
         let clippedTriangles = 0;
-        var clipped = [createTriangle(), createTriangle()];
-        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 0.1, 0.1], [0.0, 0.0, 1.0, 0.1], triangleViewed, clipped[0], clipped[1]);
-        
-        //console.log(clipped[0])
+        let clipped = [createTriangle(), createTriangle()]; //console.log(triangleViewed)
+        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 0.1, 1.0], [0.0, 0.0, 1.0, 1.0], triangleViewed, clipped[0], clipped[1], color);
 
-        // We may end up with multiple triangles form the clip, so project as
-        // required
-        for (let n = 0; n < clippedTriangles; n++) {//console.log(clipped)
-          // project triangles from 3D --> 2D
-          /*triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangleViewed[0]);
-          triangleProjected[1] = matrixMultiplyVector(matrixProjected, triangleViewed[1]);
-          triangleProjected[2] = matrixMultiplyVector(matrixProjected, triangleViewed[2]);*/
-          
+        // We may end up with multiple triangles form the clip, so project as required
+        for (let n = 0; n < clippedTriangles; n++) {//console.log(clipped)          
           triangleProjected[0] = matrixMultiplyVector(matrixProjected, clipped[n][0]);
           triangleProjected[1] = matrixMultiplyVector(matrixProjected, clipped[n][1]);
           triangleProjected[2] = matrixMultiplyVector(matrixProjected, clipped[n][2]);
@@ -603,27 +594,76 @@
       }
     } 
 		
-		// Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
+		let listTriangles = [];
+		// Loop through all transformed, viewed, projected, and sorted triangles
 		for (let i = 0; i < trianglesToRaster.length; i++) {
 		  // Sort triangles from back to front
 		  sortTriangles(i, trianglesToRaster)
 		  
-		  let polygon = trianglesToRaster[i][0];
-		  let color = trianglesToRaster[i][1];
-		  //let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
 		  
-		  // shading
-      fillTriangle(polygon[0][0], polygon[0][1],
-        polygon[1][0], polygon[1][1],
-        polygon[2][0], polygon[2][1],
-        color);
+		  
+      // Clip triangles against all four screen edges, this could yield
+      // a bunch of triangles, so create a queue that we traverse to 
+      //  ensure we only test new triangles generated against planes
+      let triToRaster = trianglesToRaster[i];
+      let clipped = [createTriangle(), createTriangle()];
+      let color = [trianglesToRaster[i][1][0]];
       
-      // triangles
-      drawTriangle(polygon[0][0], polygon[0][1],
-        polygon[1][0], polygon[1][1],
-        polygon[2][0], polygon[2][1],
-        'Black');
+      listTriangles.push(triToRaster);
+      let newTriangles = 1;
+      
+      /*for (let p = 0; p < 4; p++) {//console.log(trianglesToRaster[0]);
+        let nTrisToAdd = 0;
+        while (newTriangles > 0) {
+          // Take triangle from front of queue
+          let test = listTriangles[0][0];//console.log(test)
+          listTriangles.shift();
+          newTriangles--;          
+
+          // Clip it against a plane. We only need to test each 
+          // subsequent plane, against subsequent new triangles
+          // as all triangles after a plane clip are guaranteed
+          // to lie on the inside of the plane. I like how this
+          // comment is almost completely and utterly justified
+          switch (p) {
+            case 0:	nTrisToAdd = triangleClipAgainstPlane([0.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
+            case 1:	nTrisToAdd = triangleClipAgainstPlane([0.0, HEIGHT - 1, 0.0, 1.0], [0.0, -1.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
+            case 2:	nTrisToAdd = triangleClipAgainstPlane([0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
+            case 3:	nTrisToAdd = triangleClipAgainstPlane([WIDTH - 1, 0.0, 0.0, 1.0], [-1.0, 0.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
+          }
+
+          // Clipping may yield a variable number of triangles, so
+          // add these new ones to the back of the queue for subsequent
+          // clipping against next planes
+          for (let w = 0; w < nTrisToAdd; w++)
+            listTriangles.push(clipped[w]);
+        }
+        newTriangles = listTriangles.length;
+      }*/
+		  
+		  // Draw originally sits here for some unknown reason...
+		  // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
+      for (let i = 0; i < listTriangles.length; i++) {
+        let polygon = listTriangles[i][0];
+		    let color = listTriangles[i][1][0];
+		    //let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
+
+		    // shading
+        fillTriangle(polygon[0][0], polygon[0][1],
+          polygon[1][0], polygon[1][1],
+          polygon[2][0], polygon[2][1],
+          color);
+        
+        // triangles
+        drawTriangle(polygon[0][0], polygon[0][1],
+          polygon[1][0], polygon[1][1],
+          polygon[2][0], polygon[2][1],
+          'Black');
+		  
     }
+    // optional place for draw
+    
+  }
     
     // infinite loop
     setTimeout(gameLoop, cycleDelay);

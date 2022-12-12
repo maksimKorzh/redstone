@@ -387,14 +387,23 @@
       for (let i = 0; i < 4; i++) out_tri1[2][i] = intersect1[i]*/
       
       
+      // tri_out2 = try_out1 // would render tri_out1
+      /*let intersect2 = vectorIntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0])
+      for (let i = 0; i < 4; i++) out_tri2[0][i] = inside_points[0][i]
+      for (let i = 0; i < 4; i++) out_tri2[1][i] = inside_points[1][i]
+      for (let i = 0; i < 4; i++) out_tri2[2][i] = intersect2[i]*/
+      
       
       out_tri1[0] = inside_points[0];
       out_tri1[1] = inside_points[1];
       out_tri1[2] = vectorIntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0]);
 
+
+
       // The second triangle is composed of one of he inside points, a
       // new point determined by the intersection of the other side of the 
       // triangle and the plane, and the newly created point above
+      
       
       
       /*let intersect2 = vectorIntersectPlane(plane_p, plane_n, inside_points[1], outside_points[0])
@@ -408,11 +417,15 @@
       out_tri2[1] = out_tri1[2];
       out_tri2[2] = vectorIntersectPlane(plane_p, plane_n, inside_points[1], outside_points[0]);
       
+
+      
       /*console.log('-------')
       console.log(out_tri1)
       console.log(out_tri2)
       console.log('-------')*/
 
+      
+      
       return 2; // Return two newly formed triangles which form a quad
     }
   }
@@ -496,7 +509,7 @@
       case 37: camera[0] += 0.1; break;         /* arrow left   TODO: not working properly! */
       case 39: camera[0] -= 0.1; break;         /* arrow right  */
       case 65: Yaw -= 0.1; break;               /* 'a'          */
-      case 68: Yaw += 0.01; break;              /* 'b'          */
+      case 68: Yaw += 0.1; break;               /* 'd'          */
       case 87:
         let forward = vectorMul(lookDirection, 0.1);  /* 'w'    */
         camera = vectorAdd(camera, forward);
@@ -616,22 +629,41 @@
         // Clip Viewed Triangle against near plane, this could form two additional
         // additional triangles. 
         let clippedTriangles = 0;
-        let clipped = [createTriangle(), createTriangle()];
-        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 2.1, 1.0], [0.0, 0.0, 1.0, 1.0], triangleViewed, clipped[0], clipped[1], color);
+        //let clipped = [createTriangle(), createTriangle()];
+        let out1 = createTriangle();
+        let out2 = createTriangle();
+        
+        clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 2.1, 1.0], [0.0, 0.0, 1.0, 1.0], triangleViewed, out1, out2, color);
 
-
-        /*console.log('-------------------')
-        console.log(clipped[0])
-        console.log(clipped[1])
-        console.log('-------------------')*/
+        
 
 
         // We may end up with multiple triangles form the clip, so project as required
         for (let n = 0; n < clippedTriangles; n++) {
+          /*if (clippedTriangles == 2) {
+            console.log('-------------------')
+            console.log(clipped[0])
+            console.log(clipped[1])
+            console.log('-------------------')
+          }*/
+        
           // project triangles from 3D to 2D
-          triangleProjected[0] = matrixMultiplyVector(matrixProjected, clipped[n][0]);
+          
+          if (n == 0) {
+            triangleProjected[0] = matrixMultiplyVector(matrixProjected, out1[0]);
+            triangleProjected[1] = matrixMultiplyVector(matrixProjected, out1[1]);
+            triangleProjected[2] = matrixMultiplyVector(matrixProjected, out1[2]);
+          }
+          
+          if (n == 1) {
+            triangleProjected[0] = matrixMultiplyVector(matrixProjected, out2[0]);
+            triangleProjected[1] = matrixMultiplyVector(matrixProjected, out2[1]);
+            triangleProjected[2] = matrixMultiplyVector(matrixProjected, out2[2]);
+          }
+          
+          /*triangleProjected[0] = matrixMultiplyVector(matrixProjected, clipped[n][0]);
           triangleProjected[1] = matrixMultiplyVector(matrixProjected, clipped[n][1]);
-          triangleProjected[2] = matrixMultiplyVector(matrixProjected, clipped[n][2]);
+          triangleProjected[2] = matrixMultiplyVector(matrixProjected, clipped[n][2]);*/
           
           // scale into view, we moved the normalising into cartesian space
           // out of the matrix.vector function from the previous videos, so
@@ -649,7 +681,7 @@
           triangleProjected[2][1] *= -1.0;
 
           // scale into view
-          let offsetView = [1.0 ,1.0, 0.0, 1.0];
+          let offsetView = [1.0, 1.0, 0.0, 1.0];
 					triangleProjected[0] = vectorAdd(triangleProjected[0], offsetView);
 					triangleProjected[1] = vectorAdd(triangleProjected[1], offsetView);
 					triangleProjected[2] = vectorAdd(triangleProjected[2], offsetView);
@@ -659,12 +691,12 @@
           triangleProjected[1][1] *= 0.5 * HEIGHT;
           triangleProjected[2][0] *= 0.5 * WIDTH;
           triangleProjected[2][1] *= 0.5 * HEIGHT;
-          //console.log(triangleProjected);
+
           // Store triangle for sorting
           trianglesToRaster.push([triangleProjected, color]);
         }
       }
-    } 
+    }
 
 		// Loop through all transformed, viewed, projected, and sorted triangles
 		for (let i = 0; i < trianglesToRaster.length; i++) {
@@ -730,7 +762,7 @@
         drawTriangle(polygon[0][0], polygon[0][1],
           polygon[1][0], polygon[1][1],
           polygon[2][0], polygon[2][1],
-          'Black');
+          'Blue');
 		  
     }
     // optional place for draw

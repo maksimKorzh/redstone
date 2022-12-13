@@ -635,6 +635,9 @@
       }
     }
 
+		// eventual triangles to render
+		let listTriangles = [];
+		
 		// Loop through all transformed, viewed, projected, and sorted triangles
 		for (let i = 0; i < trianglesToRaster.length; i++) {
 		  // Sort triangles from back to front
@@ -645,63 +648,63 @@
       //  ensure we only test new triangles generated against planes
       let triToRaster = trianglesToRaster[i];
       let clipped = [createTriangle(), createTriangle()];
-      let listTriangles = [];
-      let color = [trianglesToRaster[i][1][0]];
       
-      listTriangles.push(triToRaster);
-      let newTriangles = 1;
+      //listTriangles.push(triToRaster);
+      //let newTriangles = 1;
       
-      /*for (let p = 0; p < 4; p++) {//console.log(trianglesToRaster[0]);
+      for (let p = 0; p < 4; p++) {
+        let test = triToRaster[0];
+        let color = triToRaster[1]
         let nTrisToAdd = 0;
-        while (newTriangles > 0) {
-          // Take triangle from front of queue
-          let test = listTriangles[0][0];
-          listTriangles.shift(); //console.log(test)
-          newTriangles--;          
 
-          // Clip it against a plane. We only need to test each 
-          // subsequent plane, against subsequent new triangles
-          // as all triangles after a plane clip are guaranteed
-          // to lie on the inside of the plane. I like how this
-          // comment is almost completely and utterly justified
-          switch (p) {
-            case 0:	nTrisToAdd = triangleClipAgainstPlane([0.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
-            case 1:	nTrisToAdd = triangleClipAgainstPlane([0.0, HEIGHT - 1, 0.0, 1.0], [0.0, -1.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
-            case 2:	nTrisToAdd = triangleClipAgainstPlane([0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
-            case 3:	nTrisToAdd = triangleClipAgainstPlane([WIDTH - 1, 0.0, 0.0, 1.0], [-1.0, 0.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
-          }
-
-          // Clipping may yield a variable number of triangles, so
-          // add these new ones to the back of the queue for subsequent
-          // clipping against next planes
-          
-          //console.log(nTrisToAdd)
-          for (let w = 0; w < nTrisToAdd; w++)
-            listTriangles.push(clipped[w]);
+        // Clip it against a plane. We only need to test each 
+        // subsequent plane, against subsequent new triangles
+        // as all triangles after a plane clip are guaranteed
+        // to lie on the inside of the plane. I like how this
+        // comment is almost completely and utterly justified
+        switch (p) {
+          case 0:	nTrisToAdd = triangleClipAgainstPlane([0.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
+          case 1:	nTrisToAdd = triangleClipAgainstPlane([0.0, HEIGHT - 1, 0.0, 1.0], [0.0, -1.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
+          case 2:	nTrisToAdd = triangleClipAgainstPlane([0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
+          case 3:	nTrisToAdd = triangleClipAgainstPlane([WIDTH - 1, 0.0, 0.0, 1.0], [-1.0, 0.0, 0.0, 1.0], test, clipped[0], clipped[1], color); break;
         }
-        newTriangles = listTriangles.length;
-      }*/
 
-		  // Draw originally sits here for some unknown reason...
-		  // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
-      for (let i = 0; i < listTriangles.length; i++) {
-        let polygon = listTriangles[i][0];
-		    let color = listTriangles[i][1][0];
-		    //let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
+        // Clipping may yield a variable number of triangles, so
+        // add these new ones to the back of the queue for subsequent
+        // clipping against next planes
 
-		    // shading
-        fillTriangle(polygon[0][0], polygon[0][1],
-          polygon[1][0], polygon[1][1],
-          polygon[2][0], polygon[2][1],
-          color);
+        // returns a quad
+        if (nTrisToAdd==2) {
+          listTriangles.push(JSON.parse(JSON.stringify([clipped[0], ['rgb(0,100,0)']])));
+          listTriangles.push(JSON.parse(JSON.stringify([clipped[1], ['rgb(100,0,0)']])));
+          //addTriangle(triangleProjected, clipped[0], ['rgb(0,100,0)'], trianglesToRaster);
+          //addTriangle(triangleProjected, clipped[1], ['rgb(100,0,0)'], trianglesToRaster);
+        }
         
-        // triangles
-        drawTriangle(polygon[0][0], polygon[0][1],
-          polygon[1][0], polygon[1][1],
-          polygon[2][0], polygon[2][1],
-          'Black');
-      }
-    } // triRaster loop ends here
+        // returns unchanged or a smaller triangle
+        else if (nTrisToAdd == 1) listTriangles.push(JSON.parse(JSON.stringify([clipped[0], color])));//addTriangle(triangleProjected, clipped[0], color, trianglesToRaster);
+      } 
+    }
+
+	  // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
+    for (let i = 0; i < listTriangles.length; i++) {
+      let polygon = listTriangles[i][0];
+	    let color = listTriangles[i][1][0];
+	    //let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
+
+	    // shading
+      fillTriangle(polygon[0][0], polygon[0][1],
+        polygon[1][0], polygon[1][1],
+        polygon[2][0], polygon[2][1],
+        color);
+      
+      // triangles
+      drawTriangle(polygon[0][0], polygon[0][1],
+        polygon[1][0], polygon[1][1],
+        polygon[2][0], polygon[2][1],
+        'Black');
+    }
+  
   
     // infinite loop
     setTimeout(gameLoop, cycleDelay);

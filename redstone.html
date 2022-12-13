@@ -61,8 +61,7 @@
     [[1.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]],
     [[1.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 1.0]],
   ];
-  
-  
+
   function addTriangle(triangleProjected, triangle, color, trianglesToRaster) {
     // project triangles from 3D to 2D
     triangleProjected[0] = matrixMultiplyVector(matrixProjected, triangle[0]);
@@ -97,14 +96,20 @@
     triangleProjected[2][1] *= 0.5 * HEIGHT;
     
     // Store triangle for sorting
-    trianglesToRaster.push([triangleProjected, color]);
-         
+    trianglesToRaster.push([ JSON.parse((JSON.stringify(triangleProjected))) , color]);
+
          
          // draws all here, both quad ones!!!
-         /*     fillTriangle(triangleProjected[0][0], triangleProjected[0][1],
+          //if (color == 'rgb(0,100,0)' && triangleProjected[0][0] < 0) return
+          /*fillTriangle(triangleProjected[0][0], triangleProjected[0][1],
           triangleProjected[1][0], triangleProjected[1][1],
           triangleProjected[2][0], triangleProjected[2][1],
-          color[0]);*/
+          color[0]);
+          
+          drawTriangle(triangleProjected[0][0], triangleProjected[0][1],
+          triangleProjected[1][0], triangleProjected[1][1],
+          triangleProjected[2][0], triangleProjected[2][1],
+          'Blue');*/
   }
   
   
@@ -640,29 +645,66 @@
         triangleViewed[1] = matrixMultiplyVector(matrixView, triangleTransformed[1]);
         triangleViewed[2] = matrixMultiplyVector(matrixView, triangleTransformed[2]);
 
-        // Clip Viewed Triangle against near plane, this could form two additional
+        // clip Viewed Triangle against near plane, this could form two additional
         // additional triangles. 
         let clippedTriangles = 0;
         let clipped = [createTriangle(), createTriangle()];        
         clippedTriangles = triangleClipAgainstPlane([0.0, 0.0, 2.1, 1.0], [0.0, 0.0, 1.0, 1.0], triangleViewed, clipped[0], clipped[1], color);
 
-        // We may end up with multiple triangles form the clip, so project as required
+        // we may end up with multiple triangles form the clip, so project as required
 
         
         // returns tri2 green
         if (clippedTriangles==2) {
           addTriangle(triangleProjected, clipped[0], ['rgb(0,100,0)'], trianglesToRaster);
-          addTriangle(triangleProjected, clipped[1], color, trianglesToRaster);
+          addTriangle(triangleProjected, clipped[1], ['rgb(0,0,100)'], trianglesToRaster);
         }
         
         // returns unchanged and tri1 red
-        else if (clippedTriangles ==1) addTriangle(triangleProjected, clipped[0], color, trianglesToRaster);
-
-        
+        else if (clippedTriangles == 1) addTriangle(triangleProjected, clipped[0], color, trianglesToRaster);
       }
     }
+    
+    
+    
+   /*let greenCount = 0;
+   console.log('-----');
+    for (let i = 0; i < trianglesToRaster.length; i++)
+      if (trianglesToRaster[i][1][0] == 'rgb(0,100,0)')
+      {
+         greenCount++;
 
-		// Loop through all transformed, viewed, projected, and sorted triangles
+         console.log(trianglesToRaster[i][0]);
+      }
+    console.log(greenCount)
+    console.log('-----');*/
+    
+    
+    //console.log(trianglesToRaster.length)
+    for (let i = 0; i < trianglesToRaster.length; i++) {
+      sortTriangles(i, trianglesToRaster)
+      
+      let polygon = trianglesToRaster[i][0];
+	    let color = trianglesToRaster[i][1][0];
+	    //let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
+      
+      
+      
+	    // shading
+      fillTriangle(polygon[0][0], polygon[0][1],
+        polygon[1][0], polygon[1][1],
+        polygon[2][0], polygon[2][1],
+        color);
+      
+      // triangles
+      drawTriangle(polygon[0][0], polygon[0][1],
+        polygon[1][0], polygon[1][1],
+        polygon[2][0], polygon[2][1],
+        'Blue');
+    }
+    
+
+		 /*Loop through all transformed, viewed, projected, and sorted triangles
 		for (let i = 0; i < trianglesToRaster.length; i++) {
 		  // Sort triangles from back to front
 		  sortTriangles(i, trianglesToRaster)
@@ -676,7 +718,7 @@
       let color = [trianglesToRaster[i][1][0]];
       
       listTriangles.push(triToRaster);
-      let newTriangles = 1;
+      let newTriangles = 1;*/
       
       /*for (let p = 0; p < 4; p++) {//console.log(trianglesToRaster[0]);
         let nTrisToAdd = 0;
@@ -709,9 +751,13 @@
         newTriangles = listTriangles.length;
       }*/
 		  
+		  
+		  
+		  
+		  
 		  // Draw originally sits here for some unknown reason...
 		  // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
-      for (let i = 0; i < listTriangles.length; i++) {
+      /*for (let i = 0; i < listTriangles.length; i++) {
         let polygon = listTriangles[i][0];
 		    let color = listTriangles[i][1][0];
 		    //let order = 'rgb(' + (100 + i*10) + ', ' + (100 + i*10) + ', ' + (100 + i*10) + ')'
@@ -728,10 +774,15 @@
           polygon[2][0], polygon[2][1],
           'Blue');
 		  
-       }
-    // optional place for draw
+       }*/
     
-  }
+    
+  //} // triRaster loop ends here
+  
+  // optional place for draw
+   
+  
+  
     
     // infinite loop
     setTimeout(gameLoop, cycleDelay);

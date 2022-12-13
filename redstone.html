@@ -1,6 +1,9 @@
 <style>html, body, canvas { margin: 0px; padding: 0px; }</style>
 <canvas id="screen" style="width: 100%; height: 100%"/>
 <script src="axis.js"></script>
+<script src="teapot.js"></script>
+<script src="starship.js"></script>
+<script src="mountains.js"></script>
 <script>
   // Rasterizer displaying rotating cube, port of One Lone Coder's C++ 3D engine tutorials's
 
@@ -63,14 +66,14 @@
   ];
 
   // load model from OBJ file
-  function loadFromObj() {
+  function loadFromObj(obj) {
     // since this is a pure front-end implementation we are
     // using variables stored in other JS files to load models
     // from, so feel free to add new models (assuming you're)
     // exporting them likeOne Lone Coder did in his tutorial.
     
     // pick up model to load (should be stored as a variable!)
-    let model = axis;
+    let model = obj;
     
     // split into lines
     let lines = model.split('\n')
@@ -542,16 +545,15 @@
     
     // Set up rotation matrices
 		//viewAngle += 0.01;
-    matrixRotateZ = matrixMakeRotationZ(viewAngle * 0.5);
-    matrixRotateX = matrixMakeRotationX(viewAngle);
-    
+    //matrixRotateZ = matrixMakeRotationZ(viewAngle * 0.5);
+    //matrixRotateX = matrixMakeRotationX(viewAngle);
 
     let matrixTranslation = createMatrix();
 		matrixTranslation = matrixMakeTranslation(0.0, 0.0, 3.0);
 
 		let matrixWorld = createMatrix();
 		matrixWorld = matrixMakeIdentity();	// Form World Matrix
-		matrixWorld = matrixMultiplyMatrix(matrixRotateZ, matrixRotateX); // Transform by rotation
+		//matrixWorld = matrixMultiplyMatrix(matrixRotateZ, matrixRotateX); // Transform by rotation
 		matrixWorld = matrixMultiplyMatrix(matrixWorld, matrixTranslation); // Transform by translation
 
 		// Create "Point At" Matrix for camera
@@ -716,7 +718,10 @@
     
   } window.onload = function() {
     // load 3D model (Cube mesh is default if commented out)
-    loadFromObj();
+    //loadFromObj(starship);
+    loadFromObj(axis);
+    //loadFromObj(teapot);
+    //loadFromObj(mountains);
     gameLoop();
   }
   

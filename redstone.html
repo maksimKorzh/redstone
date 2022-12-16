@@ -11,14 +11,17 @@
   var oldCycleTime = 0;
   var cycleCount = 0;
   var fps_rate = '...';
-  
+
   // resolution  
   const WIDTH = window.innerWidth;
   const HEIGHT = window.innerHeight;
   
   // graphics settings
+  const BACKGROUND_COLOR = 'lightgrey';
   const NODE_RADIUS = 5;
   const NODE_COLOR = 'White';
+  const LIGHT_COLOR_OFF = '#660000';
+  const LIGHT_COLOR_ON = '#FF0000';
   const NODE_LINE_WIDTH = 2;
   const WIRE_COLOR_OFF = '#006600';
   const WIRE_COLOR_ON = '#00FF00';
@@ -26,29 +29,36 @@
   
   // circuit representation
   var circuit = [
-    node1 = createNode(100, 100, true),
-    node2 = createNode(150, 100, false),
-    node3 = createNode(200, 200, false),
-    node4 = createNode(300, 300, false),
+    node1 = createNode('switch', 100, 100, true),
+    node2 = createNode('indicator', 150, 100, false),
+    node3 = createNode('indicator', 200, 200, false),
+    node4 = createNode('light', 300, 300, false),
     createWire(node1, node2),
     createInverter(node2, node3),
     createWire(node3, node4),
   ];
-  /*
-    dot
-    line
-    
-  */
+
+  // tools
+  const OPERATE = 0;
+  const SWITCH = 1;
+  const BUTTON = 2;
+  const WIRE = 3;
+  const INVERTER = 4;
+  const LIGHT = 5;
+  const ERASE = 6;
+  
+  var currentTool = OPERATE; 
   
   // node class
-  function createNode(x, y, active) {
+  function createNode(name, x, y, active) {
     return {
-      'class': 'node',
+      'class': name,
       'x': x,
       'y': y,
       'state': false,
       'active': active,
       'onClick': function() { this.state = this.state ? false : true; },
+      'move': function(x, y) { this.x = x; this.y = y; },
       'function': function () { /* just a placeholder */ }
     };
   }
@@ -98,16 +108,36 @@
   // render element
   function renderElement(e) {
     switch (e.class) {
-      case 'node':
+      case 'switch':
         context.fillStyle = NODE_COLOR;
         context.lineWidth = NODE_LINE_WIDTH;
         context.strokeStyle = NODE_COLOR;
         context.beginPath();
-        if (e.active) context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
-        else context.arc(e.x, e.y, NODE_RADIUS, 0, 2 * Math.PI);
+        context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
         context.stroke();
         e.state ? context.fill() : 0;
         break;
+      
+      case 'indicator':
+        context.fillStyle = NODE_COLOR;
+        context.lineWidth = NODE_LINE_WIDTH;
+        context.strokeStyle = NODE_COLOR;
+        context.beginPath();
+        context.arc(e.x, e.y, NODE_RADIUS, 0, 2 * Math.PI);
+        context.stroke();
+        e.state ? context.fill() : 0;
+        break;
+      
+      case 'light':
+        context.fillStyle = e.state ? LIGHT_COLOR_ON : LIGHT_COLOR_OFF;
+        context.strokeStyle = e.state ? LIGHT_COLOR_ON : LIGHT_COLOR_OFF;
+        context.lineWidth = NODE_LINE_WIDTH;
+        context.beginPath();
+        context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
+        context.stroke();
+        e.state ? context.fill() : 0;
+        break;
+        
       case 'wire':
         context.lineWidth = WIRE_LINE_WIDTH;
         context.strokeStyle = e.state ? WIRE_COLOR_ON : WIRE_COLOR_OFF;
@@ -210,36 +240,84 @@ ctx.stroke();
     var x = e.clientX - rect.left;              // get mouse x and adjust for el.
     var y = e.clientY - rect.top;               // get mouse y and adjust for el.
     
+    if (currentTool == OPERATE) {
+      for (let i = 0; i < circuit.length; i++) {
+        let currentElement = circuit[i]; 
+        if (currentElement.class == 'switch') {
+          if (Math.abs(currentElement.x - x) <= NODE_RADIUS &&
+              Math.abs(currentElement.y - y) <= NODE_RADIUS) {
+            currentElement.onClick();
+            break;
+          }
+        }
+      }
+    } else if (currentTool != ERASE) {
+      circuit.push(createNode(x, y, (currentTool == SWITCH ? true : false)));
+    }  
+  });
+  
+  canvas.addEventListener('mousedown', function(e) {
     let element = {'class': 'none'};
+    var rect = canvas.getBoundingClientRect();  // get element's abs. position
+    var startX = e.clientX - rect.left;              // get mouse x and adjust for el.
+    var startY = e.clientY - rect.top;               // get mouse y and adjust for el.
     for (let i = 0; i < circuit.length; i++) {
       let currentElement = circuit[i]; 
-      if (currentElement.class == 'node' && currentElement.active == true) {
-        if (Math.abs(currentElement.x - x) <= NODE_RADIUS &&
-            Math.abs(currentElement.y - y) <= NODE_RADIUS)
-          currentElement.onClick();
+      if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
+        if (Math.abs(currentElement.x - startX) <= NODE_RADIUS &&
+            Math.abs(currentElement.y - startY) <= NODE_RADIUS)
+          element = currentElement;
       }
     }
-  
+
+    if (element.class == 'none') return false;
+    
+      
+    canvas.addEventListener('mousemove', onMouseMove);
+    
+    function onMouseMove(e) {
+      var rect = canvas.getBoundingClientRect();  // get element's abs. position
+      var x = e.clientX - rect.left;              // get mouse x and adjust for el.
+      var y = e.clientY - rect.top;               // get mouse y and adjust for el.
+      
+      if (currentTool == OPERATE) element.move(x, y);
+      /*if (currentTool == WIRE) {console.log(startX + ' ' + startY + ' ' + x + ' ' + y + ' ' + element.state)
+        circuit.push(createNode('indicator', x, y, false));
+        circuit.push(createWire(element, circuit[circuit.length-1]));
+        return false;
+      }*/
+    }
+    
+    canvas.onmouseup = function() {
+      canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.onmouseup = null;
+    };
   });
+  
+  canvas.addEventListener('contextmenu', function(ev) {
+    ev.preventDefault();
+    return false;
+  }, false);
+  
+  
 
   // move camera
   document.onkeydown = function(event) {
     switch (event.keyCode) {
-      case 38: camera[1] += 0.1; break;         /* arrow up     */
-      case 40: camera[1] -= 0.1; break;         /* arrow down   */
-      case 37: camera[0] += 0.1; break;         /* arrow left   */
-      case 39: camera[0] -= 0.1; break;         /* arrow right  */
-      case 65: Yaw -= 0.1; break;               /* 'a'          */
-      case 68: Yaw += 0.1; break;               /* 'd'          */
-      case 87:
-        let forward = vectorMul(lookDirection, 0.1);  /* 'w'    */
-        camera = vectorAdd(camera, forward);
-        break;
-      case 83: { 
-        let forward = vectorMul(lookDirection, 0.1);  /* 's'    */
-        camera = vectorSub(camera, forward);
-        break;
-      }
+      
+      case 38:  break;         /* arrow up     */
+      case 40: break;         /* arrow down   */
+      case 37:  break;         /* arrow left   */
+      case 39:  break;         /* arrow right  */
+      case 65:  break;               /* 'a'          */
+      case 68:  break;               /* 'd'          */
+      case 87: break;
+      case 83: break;
+    }
+    
+    if (event.keyCode >= 48 && event.keyCode <= 54) {
+      currentTool = event.keyCode - 48;
+      console.log(currentTool);
     }
   }
 

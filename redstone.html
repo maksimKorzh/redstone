@@ -30,7 +30,7 @@
           <option value="1000">1000</option>
         </select>
       </td>
-      <td><button id="reset" style="width: 100%; background-color: grey; color: white;" onclick="resetBoard();">Reset</button></td>
+      <td><button id="reset" style="width: 100%; background-color: grey; color: white;" onclick="circuit=[];">Reset</button></td>
       <td style="width: 13%;"><textarea id="set" style="resize: none; width: 100%; height: 20px; margin: 0px;"></textarea></td>
       <td><button onclick="setBoard();" style="width: 100%;">SET</button></td>
       <td><button onclick="getBoard();" style="width: 100%;">GET</button></td>
@@ -66,6 +66,7 @@
   const WIRE_COLOR_OFF = '#006600';
   const WIRE_COLOR_ON = '#00FF00';
   const WIRE_LINE_WIDTH = 4;
+  const ELEMENT_LENGTH = 30;
   
   // circuit representation
   var circuit = [];
@@ -102,7 +103,7 @@
       'y': y,
       'state': false,
       'active': active,
-      'onClick': function() { this.state = this.state ? false : true; },
+      'onClick': function() { if (this.class == 'switch') this.state = this.state ? false : true; },
       'move': function(x, y) { this.x = Math.ceil(x / 10) * 10; this.y = Math.ceil(y / 10) * 10; },
       'function': function () { /* just a placeholder */ }
     };
@@ -167,7 +168,11 @@
   }
   
   // create element
-  function createElement(x, y, element) {
+  function createElement(x, y) {
+    // grid align
+    x = Math.ceil(x / 10) * 10;
+    y = Math.ceil(y / 10) * 10;
+    
     switch (currentTool) {
       case INDICATOR:
         circuit.push(createNode('indicator', x, y, false));
@@ -180,20 +185,23 @@
         break;
       case WIRE:
         circuit.push(createNode('indicator', x, y, false));
-        circuit.push(createWire(element, circuit[circuit.length-1]));
+        circuit.push(createNode('indicator', x+ELEMENT_LENGTH*2, y, false));
+        circuit.push(createWire(circuit[circuit.length-2], circuit[circuit.length-1]));
         break;
       case INVERTER:
         circuit.push(createNode('indicator', x, y, false));
-        circuit.push(createInverter(element, circuit[circuit.length-1]));
+        circuit.push(createNode('indicator', x+ELEMENT_LENGTH*2, y, false));
+        circuit.push(createInverter(circuit[circuit.length-2], circuit[circuit.length-1]));
         break;
       case LIGHT:
-        circuit.push(createNode('light', x, y, false));
-        circuit.push(createWire(element, circuit[circuit.length-1]));
+        circuit.push(createNode('indicator', x, y, false));
+        circuit.push(createNode('light', x+ELEMENT_LENGTH*2, y, false));
+        circuit.push(createWire(circuit[circuit.length-2], circuit[circuit.length-1]));
         break;
       case OR:
-        circuit.push(createNode('indicator', x, y+30, false));
-        circuit.push(createNode('indicator', x, y-30, false));
-        circuit.push(createNode('indicator', x+30, y, false));
+        circuit.push(createNode('indicator', x, y+ELEMENT_LENGTH, false));
+        circuit.push(createNode('indicator', x, y-ELEMENT_LENGTH, false));
+        circuit.push(createNode('indicator', x+ELEMENT_LENGTH, y, false));
         circuit.push(createOR(circuit[circuit.length-3], circuit[circuit.length-2], circuit[circuit.length-1]));
         break;
     }
@@ -203,23 +211,33 @@
   function renderElement(e) {
     switch (e.class) {      
       case 'indicator':
-        context.fillStyle = NODE_COLOR;
+        context.fillStyle = e.state ? NODE_COLOR : 'Black';
         context.lineWidth = NODE_LINE_WIDTH;
         context.strokeStyle = NODE_COLOR;
         context.beginPath();
         context.arc(e.x, e.y, NODE_RADIUS, 0, 2 * Math.PI);
         context.stroke();
-        e.state ? context.fill() : 0;
+        context.fill();
         break;
 
       case 'switch':
-        context.fillStyle = NODE_COLOR;
+        context.fillStyle = e.state ? NODE_COLOR : 'Black';
         context.lineWidth = NODE_LINE_WIDTH;
         context.strokeStyle = NODE_COLOR;
         context.beginPath();
         context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
         context.stroke();
-        e.state ? context.fill() : 0;
+        context.fill();
+        break;
+      
+      case 'button':
+        context.fillStyle = e.state ? NODE_COLOR : 'Black';
+        context.lineWidth = NODE_LINE_WIDTH;
+        context.strokeStyle = NODE_COLOR;
+        context.beginPath();
+        context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
+        context.stroke();
+        context.fill();
         break;
         
       case 'wire':
@@ -230,6 +248,8 @@
         context.lineTo(e.out.x, e.out.y);
         context.stroke();
         context.closePath();
+        renderElement(e.in);
+        renderElement(e.out);
         break
 
       case 'inverter':
@@ -242,18 +262,28 @@
         context.lineTo(invX, invY);
         context.stroke();
         context.closePath();
-        context.fillStyle = NODE_COLOR;
-        context.strokeStyle = NODE_COLOR;
-        context.beginPath();
-        context.arc(invX, invY, NODE_RADIUS*1.5, 0, 2 * Math.PI);
-        e.state ? context.stroke() : context.fill();
-        context.closePath();
         context.strokeStyle = e.state ? WIRE_COLOR_OFF : WIRE_COLOR_ON;
         context.beginPath();
         context.moveTo(invX, invY);
         context.lineTo(e.out.x, e.out.y);
         context.stroke();
         context.closePath();
+        /*context.fillStyle = e.state ? 'Black' : NODE_COLOR;
+        context.strokeStyle = NODE_COLOR;
+        context.beginPath();
+        context.arc(invX, invY, NODE_RADIUS, 0, 2 * Math.PI);
+        context.stroke();
+        context.fill();*/
+        context.fillStyle = e.state ? 'Black' : NODE_COLOR;
+        context.lineWidth = NODE_LINE_WIDTH;
+        context.strokeStyle = NODE_COLOR;
+        context.beginPath();
+        context.rect(invX-NODE_RADIUS, invY-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
+        context.stroke();
+        context.fill();
+        context.closePath();
+        renderElement(e.in);
+        renderElement(e.out);
         break;
 
       case 'light':
@@ -263,7 +293,7 @@
         context.beginPath();
         context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
         context.stroke();
-        e.state ? context.fill() : 0;
+        context.fill();
         break;
       
       case 'OR':
@@ -279,17 +309,21 @@
         context.lineTo(e.out.x, e.out.y);
         context.stroke();
         context.closePath();
+        renderElement(e.in1);
+        renderElement(e.in2);
+        renderElement(e.out);
         break;
     }
   }
   
   // draw grid
   function drawGrid() {
+    context.lineWidth = 1;
     context.fillStyle = 'Black';
     context.fillRect(0, 0, canvas.width, canvas.height);
     
     for (let x = 0; x < WIDTH; x += 10) {
-      context.strokeStyle = 'Grey'
+      context.strokeStyle = '#222222'
       context.beginPath();
       context.moveTo(x, 0);
       context.lineTo(x, HEIGHT);
@@ -297,7 +331,7 @@
       context.closePath();
     }
     for (let y = 0; y < HEIGHT; y += 10) {
-      context.strokeStyle = 'Grey'
+      context.strokeStyle = '#222222'
       context.beginPath();
       context.moveTo(0, y);
       context.lineTo(WIDTH, y);
@@ -379,7 +413,7 @@ ctx.stroke();
     if (currentTool == OPERATE) {
       for (let i = 0; i < circuit.length; i++) {
         let currentElement = circuit[i]; 
-        if (currentElement.class == 'switch') {
+        if (currentElement.class == 'switch' || currentElement.class == 'button') {
           if (Math.abs(currentElement.x - x) <= NODE_RADIUS &&
               Math.abs(currentElement.y - y) <= NODE_RADIUS) {
             currentElement.onClick();
@@ -400,6 +434,7 @@ ctx.stroke();
 
     for (let i = 0; i < circuit.length; i++) {
       let currentElement = circuit[i]; 
+      if (currentElement.class == 'button') currentElement.state = true;
       if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
         if (Math.abs(currentElement.x - startX) <= NODE_RADIUS &&
             Math.abs(currentElement.y - startY) <= NODE_RADIUS) {
@@ -409,23 +444,17 @@ ctx.stroke();
     }
 
     if (element.class == 'none') {
-      if ((currentTool && currentTool < WIRE) || currentTool >= OR) {
-        createElement(startX, startY, element);
-        currentTool = OPERATE;
-      } return false;
+      createElement(startX, startY);
+      changeTool(OPERATE);
+      return false;
     }
-    else {
-      createElement(startX, startY, element);
-      currentTool = OPERATE;
-    }
-    
       
     canvas.addEventListener('mousemove', onMouseMove);
     
     function onMouseMove(e) {
       var rect = canvas.getBoundingClientRect();  // get element's abs. position
-      endX = e.clientX - rect.left;              // get mouse x and adjust for el.
-      endY = e.clientY - rect.top;               // get mouse y and adjust for el.
+      endX = e.clientX - rect.left;               // get mouse x and adjust for el.
+      endY = e.clientY - rect.top;                // get mouse y and adjust for el.
 
       if (currentTool == OPERATE) element.move(endX, endY);
     }
@@ -434,6 +463,7 @@ ctx.stroke();
       // connect nodes
       for (let i = 0; i < circuit.length; i++) {
         let currentElement = circuit[i]; 
+        if (currentElement.class == 'button') currentElement.state = false;
         if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
           if (Math.abs(currentElement.x - endX) <= NODE_RADIUS &&
               Math.abs(currentElement.y - endY) <= NODE_RADIUS) {
@@ -441,15 +471,14 @@ ctx.stroke();
               //console.log('connect');
               let draggedNode = circuit[element.id];
               let connectNode = currentElement;
-              
-              console.log('drugged ' + draggedNode.id)
-              console.log('connect ' + connectNode.id)
-              
-              
-              //console.log('current ' + currentElement.id)
+
               let replaceNode = {'id': 'none'};
-              if (circuit[element.id+1].class == 'wire' || circuit[element.id+1].class == 'inverter') {
-                if (circuit[element.id+1].in.id == draggedNode.id) {
+              if (circuit[element.id+1].class == 'wire' || 
+                  circuit[element.id+1].class == 'inverter' ||
+                  circuit[element.id+1].class == 'OR') {
+                  
+                  console.log('connect')
+                /*if (circuit[element.id+1].in.id == draggedNode.id) {
                   console.log('wire replace in')
                   //circuit[element.id+1].in = circuit[i];
                 }
@@ -457,29 +486,18 @@ ctx.stroke();
                    circuit[element.id+1].out = connectNode;
                    //
                 }
-                circuit.remove(draggedNode.id);
+                circuit.remove(draggedNode.id);*/
               } else {
                 
-                if (circuit[element.id+2].in.id == draggedNode.id) {
+                /*if (circuit[element.id+2].in.id == draggedNode.id) {
                   circuit[element.id+2].in = connectNode;
                   //circuit.remove(draggedNode.id);
                 }
                 if (circuit[element.id+2].out.id == draggedNode.id) {
                   console.log('node replace out ');
                 }
-                circuit.remove(draggedNode.id);
+                circuit.remove(draggedNode.id);*/
               }
-              
-              
-              
-              // remove dragged node
-              //circuit.remove(element.id)
-              
-              // redefine new node
-              //console.log(circuit[element.id])
-
-              
-              
             }
           }
         }

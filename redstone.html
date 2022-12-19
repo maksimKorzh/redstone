@@ -4,7 +4,8 @@
                        position: absolute;
                        top: 0px;
                        left: 0px;
-                       width: 95%; overflow: auto;">
+                       width: 95%; overflow: auto;
+                       -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;">
   <table cellspacing="0" style="width: 100%;">
     <tr>
       <td><button id="tool-1" onclick="changeTool(INDICATOR);" style="width: 100%; background-color: lightgrey;">Node</button></td>
@@ -434,7 +435,6 @@ ctx.stroke();
 
     for (let i = 0; i < circuit.length; i++) {
       let currentElement = circuit[i]; 
-      if (currentElement.class == 'button') currentElement.state = true;
       if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
         if (Math.abs(currentElement.x - startX) <= NODE_RADIUS &&
             Math.abs(currentElement.y - startY) <= NODE_RADIUS) {
@@ -443,6 +443,7 @@ ctx.stroke();
       }
     }
 
+    if (element.class == 'button') element.state = true;
     if (element.class == 'none') {
       createElement(startX, startY);
       changeTool(OPERATE);

@@ -29,13 +29,16 @@
   
   // circuit representation
   var circuit = [];
-  /*circuit.push(createNode('switch', 100, 100, true));
-  circuit.push(createNode('indicator', 150, 100, false));
-  circuit.push(createNode('indicator', 200, 100, false));
-  circuit.push(createNode('light', 300, 300, false));
-  circuit.push(createWire(circuit[0], circuit[1]));
-  circuit.push(createInverter(circuit[1], circuit[2]));
-  circuit.push(createWire(circuit[2], circuit[3]));*/
+  //circuit.push(createNode('switch', 100, 100, true));
+  //circuit.push(createNode('switch', 100, 200, true));
+  //circuit.push(createNode('indicator', 200, 100, true));
+  //circuit.push(createNode('indicator', 200, 200, true));
+  //circuit.push(createInverter(circuit[0], circuit[2]));
+  //circuit.push(createInverter(circuit[1], circuit[3]));
+  //circuit.push(createNode('indicator', 200, 150, false));
+  //circuit.push(createOR(circuit[2], circuit[3], circuit[6]));
+  //circuit.push(createWire(circuit[2], circuit[6]));
+  //circuit.push(createWire(circuit[3], circuit[6]));
 
   // tools
   const OPERATE = 0;
@@ -45,7 +48,8 @@
   const WIRE = 4;
   const INVERTER = 5;
   const LIGHT = 6;
-  const ERASE = 7;
+  const OR = 7;
+  const ERASE = 8;
   
   var currentTool = OPERATE; 
   
@@ -64,6 +68,20 @@
     };
   }
   
+  // OR
+  function createOR(node1, node2, node3) {
+    return {
+      'id': circuit.length,
+      'class': 'OR',
+      'in1': node1,
+      'in2': node2,
+      'out': node3,
+      'function': function() {
+        this.out.state = this.in1.state | this.in2.state;
+      }
+    }
+  }
+  
   // wire class
   function createWire(node1, node2) {
     return {
@@ -72,7 +90,7 @@
       'in': node1,
       'out': node2,
       'state': false,
-      'function': function() {
+      'function': function() { 
         if (this.state == false && (this.in.state == true || this.out.state == true)) {
           this.state = true;
           this.in.state = this.state;
@@ -83,7 +101,6 @@
           this.in.state = this.state;
           this.out.state = this.state;
         }
-        
       }
     };
   }
@@ -132,6 +149,12 @@
       case LIGHT:
         circuit.push(createNode('light', x, y, false));
         circuit.push(createWire(element, circuit[circuit.length-1]));
+        break;
+      case OR:
+        circuit.push(createNode('indicator', x, y+NODE_RADIUS*2, false));
+        circuit.push(createNode('indicator', x, y-NODE_RADIUS*2, false));
+        circuit.push(createNode('indicator', x+NODE_RADIUS*2, y, false));
+        circuit.push(createOR(circuit[circuit.length-3], circuit[circuit.length-2], circuit[circuit.length-1]));
         break;
     }
   }
@@ -304,8 +327,8 @@ ctx.stroke();
       }
     }
 
-    if (element.class == 'none') {
-      if (currentTool && currentTool < WIRE) {
+    if (element.class == 'none') {console.log(currentTool)
+      if ((currentTool && currentTool < WIRE) || currentTool >= OR) {
         createElement(startX, startY, element);
         currentTool = OPERATE;
       } return false;
@@ -415,7 +438,7 @@ ctx.stroke();
       case 83: break;
     }
     
-    if (event.keyCode >= 48 && event.keyCode <= 54) {
+    if (event.keyCode >= 48 && event.keyCode <= 60) {
       currentTool = event.keyCode - 48;
       //console.log(currentTool);
     }
@@ -444,6 +467,7 @@ ctx.stroke();
   
     // infinite loop
     requestAnimationFrame(gameLoop);
+    //setTimeout(gameLoop, 1000);
     
     // render FPS to screen
     context.fillStyle = 'white';

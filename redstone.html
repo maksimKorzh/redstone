@@ -1,5 +1,45 @@
 <style>html, body, canvas { margin: 0px; padding: 0px; }</style>
+<div id="tools" style="margin:auto;
+                       border: 1px solid black;
+                       position: absolute;
+                       top: 0px;
+                       left: 0px;
+                       width: 95%; overflow: auto;">
+  <table cellspacing="0" style="width: 100%;">
+    <tr>
+      <td><button id="tool-1" onclick="changeTool(INDICATOR);" style="width: 100%; background-color: lightgrey;">Node</button></td>
+      <td><button id="tool-2" onclick="changeTool(SWITCH);" style="width: 100%; background-color: lightgrey;">Switch</button></td>
+      <td><button id="tool-3" onclick="changeTool(BUTTON);" style="width: 100%; background-color: lightgrey;">Button</button></td>
+      <td><button id="tool-4" onclick="changeTool(WIRE);" style="width: 100%; background-color: lightgrey;">Wire</button></td>
+      <td><button id="tool-5" onclick="changeTool(INVERTER);" style="width: 100%; background-color: lightgrey;">Inverter</button></td>
+      <td><button id="tool-6" onclick="changeTool(LIGHT);" style="width: 100%; background-color: lightgrey;">Light</button></td>
+      <td><button id="tool-7" onclick="changeTool(OR);" style="width: 100%; background-color: lightgrey;">OR</button></td>
+      <td><button id="tool-8" onclick="changeTool(ERASE);" style="width: 100%; background-color: lightgrey;">Erase</button></td>
+      <td>
+        <select id="tick" onchange="updateSpeed(parseInt(this.value));" style="width: 100%;">
+          <option value="0">Instant</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="300">300</option>
+          <option value="400">400</option>
+          <option value="500" selected="selected">500</option>
+          <option value="600">600</option>
+          <option value="700">700</option>
+          <option value="800">800</option>
+          <option value="900">900</option>
+          <option value="1000">1000</option>
+        </select>
+      </td>
+      <td><button id="reset" style="width: 100%; background-color: grey; color: white;" onclick="resetBoard();">Reset</button></td>
+      <td style="width: 13%;"><textarea id="set" style="resize: none; width: 100%; height: 20px; margin: 0px;"></textarea></td>
+      <td><button onclick="setBoard();" style="width: 100%;">SET</button></td>
+      <td><button onclick="getBoard();" style="width: 100%;">GET</button></td>
+      <td style="width: 13%;"><textarea id="get" style="resize: none; width: 100%; height: 20px; margin: 0px;"></textarea></td>
+    </tr>
+  </table>
+</div>
 <canvas id="screen" style="width: 100%; height: 100%"/>
+
 <script>
   // init canvas
   const canvas = document.getElementById('screen');
@@ -368,7 +408,7 @@ ctx.stroke();
       }
     }
 
-    if (element.class == 'none') {console.log(currentTool)
+    if (element.class == 'none') {
       if ((currentTool && currentTool < WIRE) || currentTool >= OR) {
         createElement(startX, startY, element);
         currentTool = OPERATE;
@@ -457,6 +497,14 @@ ctx.stroke();
     this.length = from < 0 ? this.length + from : from;
     return this.push.apply(this, rest);
   };
+  
+  // change tool
+  function changeTool(tool) {
+    currentTool = tool;
+    for (let i = 1; i < 9; i++) {
+      document.getElementById('tool-' + i).style.backgroundColor = (i == currentTool ? 'cyan' : 'lightgrey');
+    }
+  }
   
   canvas.addEventListener('contextmenu', function(ev) {
     ev.preventDefault();

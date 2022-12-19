@@ -63,7 +63,7 @@
       'state': false,
       'active': active,
       'onClick': function() { this.state = this.state ? false : true; },
-      'move': function(x, y) { this.x = x; this.y = y; },
+      'move': function(x, y) { this.x = Math.ceil(x / 10) * 10; this.y = Math.ceil(y / 10) * 10; },
       'function': function () { /* just a placeholder */ }
     };
   }
@@ -151,9 +151,9 @@
         circuit.push(createWire(element, circuit[circuit.length-1]));
         break;
       case OR:
-        circuit.push(createNode('indicator', x, y+NODE_RADIUS*2, false));
-        circuit.push(createNode('indicator', x, y-NODE_RADIUS*2, false));
-        circuit.push(createNode('indicator', x+NODE_RADIUS*2, y, false));
+        circuit.push(createNode('indicator', x, y+30, false));
+        circuit.push(createNode('indicator', x, y-30, false));
+        circuit.push(createNode('indicator', x+30, y, false));
         circuit.push(createOR(circuit[circuit.length-3], circuit[circuit.length-2], circuit[circuit.length-1]));
         break;
     }
@@ -225,16 +225,57 @@
         context.stroke();
         e.state ? context.fill() : 0;
         break;
+      
+      case 'OR':
+        context.lineWidth = WIRE_LINE_WIDTH;
+        context.strokeStyle = e.out.state ? WIRE_COLOR_ON : WIRE_COLOR_OFF;
+        context.beginPath();
+        context.moveTo(e.in1.x, e.in1.y);
+        context.lineTo(e.in2.x, e.in2.y);
+        context.stroke();
+        context.closePath();
+        context.beginPath();
+        context.moveTo(e.in1.x+(e.in2.x - e.in1.x)/2, e.in2.y-(e.in2.y - e.in1.y)/2);
+        context.lineTo(e.out.x, e.out.y);
+        context.stroke();
+        context.closePath();
+        break;
+    }
+  }
+  
+  // draw grid
+  function drawGrid() {
+    context.fillStyle = 'Black';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    for (let x = 0; x < WIDTH; x += 10) {
+      context.strokeStyle = 'Grey'
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x, HEIGHT);
+      context.stroke();
+      context.closePath();
+    }
+    for (let y = 0; y < HEIGHT; y += 10) {
+      context.strokeStyle = 'Grey'
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(WIDTH, y);
+      context.stroke();
+      context.closePath();
     }
   }
 
   // render frame
   function renderFrame() {
+    // draw grid
+    drawGrid();
+      
     // loop over circuit elements
     for (let i = 0; i < circuit.length; i++) {
       // pick up element
       let element = circuit[i];
-
+      
       // update state
       element.function();
       
@@ -457,20 +498,15 @@ ctx.stroke();
     // resize canvas
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
-    
-    // update screen
-    context.fillStyle = 'Black';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // render frame
     renderFrame();
   
     // infinite loop
     requestAnimationFrame(gameLoop);
-    //setTimeout(gameLoop, 1000);
     
     // render FPS to screen
-    context.fillStyle = 'white';
+    context.fillStyle = 'Black';
     context.font = '10px Monospace';
     context.fillText('FPS: ' + fps_rate, 0, 20);
     

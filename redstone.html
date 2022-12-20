@@ -17,13 +17,13 @@
       <td><button id="tool-7" onclick="changeTool(OR);" style="width: 100%; background-color: lightgrey;">OR</button></td>
       <td><button id="tool-8" onclick="changeTool(ERASE);" style="width: 100%; background-color: lightgrey;">Erase</button></td>
       <td>
-        <select id="tick" onchange="updateSpeed(parseInt(this.value));" style="width: 100%;">
+        <select id="tick" style="width: 100%;">
           <option value="0">Instant</option>
           <option value="100">100</option>
           <option value="200">200</option>
           <option value="300">300</option>
           <option value="400">400</option>
-          <option value="500" selected="selected">500</option>
+          <option value="500">500</option>
           <option value="600">600</option>
           <option value="700">700</option>
           <option value="800">800</option>
@@ -404,6 +404,12 @@ ctx.stroke();
     context.stroke();
   }*/
   
+  // delete single node
+  function deleteNode(id) {
+    for (let i = 0 ; i < circuit.length; i++)
+      if (circuit[i].id == id) circuit.remove(i);
+  }
+  
   // click handle
   canvas.addEventListener('click', function(e) {  // use event argument
 
@@ -466,39 +472,28 @@ ctx.stroke();
         let currentElement = circuit[i]; 
         if (currentElement.class == 'button') currentElement.state = false;
         if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
-          if (Math.abs(currentElement.x - endX) <= NODE_RADIUS &&
-              Math.abs(currentElement.y - endY) <= NODE_RADIUS) {
-            if (currentElement.id != element.id) {
-              //console.log('connect');
-              let draggedNode = circuit[element.id];
-              let connectNode = currentElement;
-
-              let replaceNode = {'id': 'none'};
-              if (circuit[element.id+1].class == 'wire' || 
-                  circuit[element.id+1].class == 'inverter' ||
-                  circuit[element.id+1].class == 'OR') {
-                  
-                  console.log('connect')
-                /*if (circuit[element.id+1].in.id == draggedNode.id) {
-                  console.log('wire replace in')
-                  //circuit[element.id+1].in = circuit[i];
-                }
-                if (circuit[element.id+1].out.id == draggedNode.id) {
-                   circuit[element.id+1].out = connectNode;
-                   //
-                }
-                circuit.remove(draggedNode.id);*/
-              } else {
-                
-                /*if (circuit[element.id+2].in.id == draggedNode.id) {
-                  circuit[element.id+2].in = connectNode;
-                  //circuit.remove(draggedNode.id);
-                }
-                if (circuit[element.id+2].out.id == draggedNode.id) {
-                  console.log('node replace out ');
-                }
-                circuit.remove(draggedNode.id);*/
+          if (Math.abs(currentElement.x - endX) <= NODE_RADIUS*2 &&
+              Math.abs(currentElement.y - endY) <= NODE_RADIUS*2) {
+            let draggedNode = element;
+            let connectNode = currentElement;
+            
+            if (connectNode.id != draggedNode.id) {
+              // node may have more than 1 parent, all has to be overridden
+              let inParents = [];
+              let outParents = [];
+              
+              for (let j = 0; j < circuit.length; j++) {
+                if (circuit[j].class == 'wire' || circuit[j].class == 'inverter') {
+                  // populate parents list
+                  if (circuit[j].in.id == draggedNode.id) inParents.push(circuit[j]);
+                  if (circuit[j].out.id == draggedNode.id) outParents.push(circuit[j]);
+                };
               }
+              
+              // override parents
+              for (let p = 0; p < inParents.length; p++) inParents[p].in = connectNode;
+              for (let p = 0; p < outParents.length; p++) outParents[p].out = connectNode;
+              if (inParents.length || outParents.length) deleteNode(draggedNode.id);
             }
           }
         }
@@ -546,10 +541,8 @@ ctx.stroke();
       case 83: break;
     }
     
-    if (event.keyCode >= 48 && event.keyCode <= 60) {
-      currentTool = event.keyCode - 48;
-      //console.log(currentTool);
-    }
+    if (event.keyCode >= 48 && event.keyCode <= 56)
+      changeTool(event.keyCode - 48);
   }
 
   // game loop
@@ -570,7 +563,9 @@ ctx.stroke();
     renderFrame();
   
     // infinite loop
-    requestAnimationFrame(gameLoop);
+    let tickDelay = document.getElementById('tick').value;
+    if (!tickDelay) requestAnimationFrame(gameLoop);
+    else setTimeout(gameLoop, tickDelay)
     
     // render FPS to screen
     context.fillStyle = 'Black';

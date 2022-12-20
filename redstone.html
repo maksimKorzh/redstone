@@ -487,12 +487,19 @@ ctx.stroke();
                   // populate parents list
                   if (circuit[j].in.id == draggedNode.id) inParents.push(circuit[j]);
                   if (circuit[j].out.id == draggedNode.id) outParents.push(circuit[j]);
-                };
+                }
               }
               
               // override parents
-              for (let p = 0; p < inParents.length; p++) inParents[p].in = connectNode;
-              for (let p = 0; p < outParents.length; p++) outParents[p].out = connectNode;
+              for (let p = 0; p < inParents.length; p++) {
+                
+                inParents[p].in = connectNode;
+                if (inParents[p].in.id == inParents[p].out.id) deleteNode(inParents[p].id);
+              }
+              for (let p = 0; p < outParents.length; p++) {
+                outParents[p].out = connectNode;
+                if (outParents[p].in.id == outParents[p].out.id) deleteNode(outParents[p].id);
+              }
               if (inParents.length || outParents.length) deleteNode(draggedNode.id);
             }
           }

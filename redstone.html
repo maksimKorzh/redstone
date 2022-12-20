@@ -71,16 +71,6 @@
   
   // circuit representation
   var circuit = [];
-  //circuit.push(createNode('switch', 100, 100, true));
-  //circuit.push(createNode('switch', 100, 200, true));
-  //circuit.push(createNode('indicator', 200, 100, true));
-  //circuit.push(createNode('indicator', 200, 200, true));
-  //circuit.push(createInverter(circuit[0], circuit[2]));
-  //circuit.push(createInverter(circuit[1], circuit[3]));
-  //circuit.push(createNode('indicator', 200, 150, false));
-  //circuit.push(createOR(circuit[2], circuit[3], circuit[6]));
-  //circuit.push(createWire(circuit[2], circuit[6]));
-  //circuit.push(createWire(circuit[3], circuit[6]));
 
   // tools
   const OPERATE = 0;
@@ -414,8 +404,8 @@ ctx.stroke();
   canvas.addEventListener('click', function(e) {  // use event argument
 
     var rect = canvas.getBoundingClientRect();  // get element's abs. position
-    var x = e.clientX - rect.left;              // get mouse x and adjust for el.
-    var y = e.clientY - rect.top;               // get mouse y and adjust for el.
+    var x = e.clientX - rect.left + window.scrollX;              // get mouse x and adjust for el.
+    var y = e.clientY - rect.top + window.scrollY;               // get mouse y and adjust for el.
     
     if (currentTool == OPERATE) {
       for (let i = 0; i < circuit.length; i++) {

@@ -13,6 +13,7 @@
       <td><button id="tool-3" onclick="changeTool(NODE);" style="width: 100%; background-color: lightgrey;">Node</button></td>
       <td><button id="tool-4" onclick="changeTool(BUFFER);" style="width: 100%; background-color: lightgrey;">Buffer</button></td>
       <td><button id="tool-5" onclick="changeTool(INVERTER);" style="width: 100%; background-color: lightgrey;">Inverter</button></td>
+      <td><button id="tool-6" onclick="changeTool(WIRE);" style="width: 100%; background-color: lightgrey;">Wire</button></td>
       <td><button id="tool-0" onclick="changeTool(REMOVE);" style="width: 100%; background-color: lightgrey;">Remove</button></td>
       <td>
         <select id="tick" style="width: 100%;">
@@ -54,6 +55,13 @@
   const STROKE_COLOR = 'White';
   const STROKE_RADIUS = 5;
   
+  // track mouse
+  var mouseStartX = 0;
+  var mouseStartY = 0;
+  var mouseEndX = 0;
+  var mouseEndY = 0;
+  var isDown = false;
+  
   // circuit representation
   var circuit = [];
 
@@ -63,9 +71,9 @@
   const NODE = 3;
   const BUFFER = 4;
   const INVERTER = 5;
-  
+  const WIRE = 6;
   const REMOVE = 0;
-  const TOOL_RANGE = 6;
+  const TOOL_RANGE = 7;
   
   // current tool
   var currentTool = MOVE; 
@@ -120,8 +128,32 @@
     };
   }
   
+  // wire class
+  function createWire(node1, node2) {
+    return {
+      'id': circuit.length,
+      'class': 'wire',
+      'state': false,
+      'node1': node1,
+      'node2': node2,
+      'move': function() { /* just a placeholder */ },
+      'function': function() {
+        if (this.state == false && (this.node1.state == true || this.node2.state == true)) {
+          this.state = true;
+          this.node1.state = this.state;
+          this.node2.state = this.state;
+        }
+        if (this.state == true && (this.node1.state == false || this.node2.state == false)) {
+          this.state = false;
+          this.node1.state = this.state;
+          this.node2.state = this.state;
+        }
+      }
+    };
+  }
+  
   // create element
-  function createElement(x, y) {
+  function createElement(x, y, node1, node2) {
     // grid align
     x = Math.ceil(x / 10) * 10;
     y = Math.ceil(y / 10) * 10;
@@ -146,8 +178,8 @@
         break;
       }
       
-      case INVERTER:
-        //circuit.push(createInverter(x, y, []));
+      case WIRE:
+        circuit.push(createWire(node1, node2));
         break;
     }
   }
@@ -155,7 +187,7 @@
   // render element
   function renderElement(e) {
     context.strokeStyle = STROKE_COLOR;
-        
+     
     switch (e.class) {      
       case 'node':
         context.fillStyle = e.state ? STROKE_COLOR : 'Black';
@@ -203,6 +235,27 @@
         context.lineTo(e.x + 7*STROKE_RADIUS, e.y);
         context.stroke();
         break;
+      
+      case 'wire':
+        context.beginPath();
+        context.moveTo(e.node1.x, e.node1.y);
+        context.lineTo(e.node2.x, e.node2.y);
+        context.stroke();
+        renderElement(e.node1);
+        renderElement(e.node2);
+        break;
+    }
+  }
+  
+  // draft wire
+  function draftWire() {
+    if (isDown && currentTool == WIRE && mouseEndX) {
+      context.lineWidth = STROKE_WIDTH;
+      context.strokeStyle = STROKE_COLOR;
+      context.beginPath();
+      context.moveTo(mouseStartX, mouseStartY);
+      context.lineTo(mouseEndX, mouseEndY);
+      context.stroke();
     }
   }
   
@@ -234,7 +287,10 @@
   function renderFrame() {
     // draw grid
     drawGrid();
-      
+
+    // draft wire
+    draftWire();
+    
     // loop over circuit elements
     for (let i = 0; i < circuit.length; i++) {
       // pick up element
@@ -244,7 +300,7 @@
       element.function();
       
       // render element
-      renderElement(element); 
+      renderElement(element);
     }
   }
   
@@ -259,8 +315,9 @@
   
   // handle user input
   canvas.addEventListener('mousedown', function(e) {
+    isDown = true;
     let element = {'class': 'none'};
-    var rect = canvas.getBoundingClientRect();  // get element's abs. position
+    var rect = canvas.getBoundingClientRect();       // get element's abs. position
     var startX = e.clientX - rect.left;              // get mouse x and adjust for el.
     var startY = e.clientY - rect.top;               // get mouse y and adjust for el.
     var endX = 0;
@@ -268,17 +325,22 @@
 
     for (let i = 0; i < circuit.length; i++) {
       let currentElement = circuit[i]; 
-      if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
-        if (Math.abs(currentElement.x - startX) <= STROKE_RADIUS &&
-            Math.abs(currentElement.y - startY) <= STROKE_RADIUS) {
-          element = currentElement;
-        }
+      if (Math.abs(currentElement.x - startX) <= STROKE_RADIUS &&
+          Math.abs(currentElement.y - startY) <= STROKE_RADIUS) {
+        element = currentElement;
       }
     }
 
     switch (element.class) {
-      case 'none': createElement(startX, startY); return false;
-      case 'node': if (currentTool == CLICK) element.onClick(); break;
+      case 'none': if (currentTool != WIRE) createElement(startX, startY, null, null); return;
+      case 'node': {
+        if (currentTool == CLICK) element.onClick();
+        else if (currentTool == WIRE) {
+          mouseStartX = element.x;
+          mouseStartY = element.y;
+        }
+        break;
+      }
     }
       
     canvas.addEventListener('mousemove', onMouseMove);
@@ -287,14 +349,52 @@
       var rect = canvas.getBoundingClientRect();  // get element's abs. position
       endX = e.clientX - rect.left;               // get mouse x and adjust for el.
       endY = e.clientY - rect.top;                // get mouse y and adjust for el.
+      mouseEndX = endX;
+      mouseEndY = endY;
 
       // move element
       if (currentTool == MOVE) element.move(endX, endY);
     }
     
     canvas.onmouseup = function() {
+      if (currentTool == WIRE) {
+        let targetElement = {'class': 'none'};
+        
+
+        for (let i = 0; i < circuit.length; i++) {
+          let currentElement = circuit[i]; 
+          if (Math.abs(currentElement.x - endX) <= STROKE_RADIUS &&
+              Math.abs(currentElement.y - endY) <= STROKE_RADIUS) {
+            targetElement = currentElement;
+          }
+        }
+        if (element.class == 'node' &&
+            targetElement.class == 'node' &&
+            targetElement.id != element.id) {
+          
+          // check if wire already exist
+          let exist = false;
+          for (let i = 0; i < circuit.length; i++) {
+            let currentElement = circuit[i]; 
+            if (currentElement.class == 'wire' &&
+                ((currentElement.node1.id == element.id && currentElement.node2.id == targetElement.id) ||
+                 (currentElement.node2.id == element.id && currentElement.node1.id == targetElement.id)))
+                  exist = true;
+                
+          }
+
+          // link two nodes
+          if (!exist) createElement(null, null, element, targetElement);   
+        }
+      }
+      
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.onmouseup = null;
+      isDown = false;
+      mouseStartX = 0;
+      mouseStartY = 0;
+      mouseEndX = 0;
+      mouseEndY = 0;
     };
   });
   

@@ -12,6 +12,7 @@
       <td><button id="tool-2" onclick="changeTool(CLICK);" style="width: 100%; background-color: lightgrey;">Click</button></td>
       <td><button id="tool-3" onclick="changeTool(NODE);" style="width: 100%; background-color: lightgrey;">Node</button></td>
       <td><button id="tool-4" onclick="changeTool(BUFFER);" style="width: 100%; background-color: lightgrey;">Buffer</button></td>
+      <td><button id="tool-5" onclick="changeTool(INVERTER);" style="width: 100%; background-color: lightgrey;">Inverter</button></td>
       <td><button id="tool-0" onclick="changeTool(REMOVE);" style="width: 100%; background-color: lightgrey;">Remove</button></td>
       <td>
         <select id="tick" style="width: 100%;">
@@ -61,9 +62,10 @@
   const CLICK = 2;
   const NODE = 3;
   const BUFFER = 4;
+  const INVERTER = 5;
   
   const REMOVE = 0;
-  const TOOL_RANGE = 5;
+  const TOOL_RANGE = 6;
   
   // current tool
   var currentTool = MOVE; 
@@ -84,15 +86,16 @@
     };
   }
   
-  // node class
-  function createBuffer(x, y, inputs, output) {
+  // buffer class
+  function createBuffer(x, y, inputs, output, inverted) {
     return {
       'id': circuit.length,
-      'class': 'buffer',
+      'class': inverted ? 'inverter' : 'buffer',
       'x': x,
       'y': y,
       'inputs': inputs,
       'output': output,
+      'inverted': inverted,
       'move': function(x, y) {
         // move buffer
         this.x = Math.ceil(x / 10) * 10; this.y = Math.ceil(y / 10) * 10;
@@ -100,7 +103,7 @@
         // move inputs
         let yOffset = (this.inputs.length-1)*6*STROKE_RADIUS / 2;
         for (let i = 0; i < this.inputs.length; i++) {
-          this.inputs[i].x = this.x-8*STROKE_RADIUS;
+          this.inputs[i].x = this.x-9*STROKE_RADIUS;
           this.inputs[i].y = this.y+6*STROKE_RADIUS*i - yOffset;
         }
         
@@ -108,7 +111,12 @@
         this.output.x = this.x+8*STROKE_RADIUS;
         this.output.y = this.y;
       },
-      'function': function () { /* just a placeholder */ }
+      'function': function () {
+        let state = false;
+        for (let i = 0; i < this.inputs.length; i++) state |= this.inputs[i].state
+        state = this.inverted ? !state : state;
+        this.output.state = state ? true : false;
+      }
     };
   }
   
@@ -123,10 +131,11 @@
         circuit.push(createNode(x, y, true, true));
         break;
 
-      case BUFFER: {
+      case BUFFER:
+      case INVERTER: {
         let numNodes = parseInt(prompt('How many inputs do you need?', 1));
         if (numNodes % 2 == 0) numNodes++;
-        circuit.push(createBuffer(x, y, []));
+        circuit.push(createBuffer(x, y, [], 0, (currentTool == BUFFER) ? false : true));
         let bufferId = circuit.length-1;
         let yOffset = (numNodes-1)*6*STROKE_RADIUS / 2;
         for (let i = 0; i < numNodes; i++) {
@@ -136,6 +145,10 @@
         circuit[bufferId].output = circuit[circuit.length-1];
         break;
       }
+      
+      case INVERTER:
+        //circuit.push(createInverter(x, y, []));
+        break;
     }
   }
   
@@ -154,6 +167,7 @@
         break; 
       
       case 'buffer':
+      case 'inverter':
         // render inputs
         context.lineWidth = STROKE_WIDTH;
         context.beginPath();
@@ -170,6 +184,12 @@
         context.lineTo(e.x + 2*STROKE_RADIUS, e.y);
         context.closePath();
         context.stroke();
+        
+        // render inverter
+        if (e.class == 'inverter') {
+          context.fillStyle = 'White';
+          context.fill();
+        }
 
         // connect inputs to buffer
         context.beginPath();

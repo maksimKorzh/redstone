@@ -8,16 +8,11 @@
                        -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;">
   <table cellspacing="0" style="width: 100%;">
     <tr>
-      <td><button id="tool-0" onclick="changeTool(MOVE);" style="width: 100%; background-color: lightgrey;">Move</button></td>
-      <td><button id="tool-1" onclick="changeTool(CLICK);" style="width: 100%; background-color: lightgrey;">Click</button></td>
-      <td><button id="tool-2" onclick="changeTool(NODE);" style="width: 100%; background-color: lightgrey;">Node</button></td>
-      <!--td><button id="tool-2" onclick="changeTool(SWITCH);" style="width: 100%; background-color: lightgrey;">Switch</button></td>
-      <td><button id="tool-3" onclick="changeTool(BUTTON);" style="width: 100%; background-color: lightgrey;">Button</button></td>
-      <td><button id="tool-4" onclick="changeTool(WIRE);" style="width: 100%; background-color: lightgrey;">Wire</button></td>
-      <td><button id="tool-5" onclick="changeTool(INVERTER);" style="width: 100%; background-color: lightgrey;">Inverter</button></td>
-      <td><button id="tool-6" onclick="changeTool(LIGHT);" style="width: 100%; background-color: lightgrey;">Light</button></td>
-      <td><button id="tool-7" onclick="changeTool(OR);" style="width: 100%; background-color: lightgrey;">OR</button></td>
-      <td><button id="tool-8" onclick="changeTool(ERASE);" style="width: 100%; background-color: lightgrey;">Erase</button></td-->
+      <td><button id="tool-1" onclick="changeTool(MOVE);" style="width: 100%; background-color: lightgrey;">Move</button></td>
+      <td><button id="tool-2" onclick="changeTool(CLICK);" style="width: 100%; background-color: lightgrey;">Click</button></td>
+      <td><button id="tool-3" onclick="changeTool(NODE);" style="width: 100%; background-color: lightgrey;">Node</button></td>
+      <td><button id="tool-4" onclick="changeTool(BUFFER);" style="width: 100%; background-color: lightgrey;">Buffer</button></td>
+      <td><button id="tool-0" onclick="changeTool(REMOVE);" style="width: 100%; background-color: lightgrey;">Remove</button></td>
       <td>
         <select id="tick" style="width: 100%;">
           <option value="0">Instant</option>
@@ -54,32 +49,65 @@
   
   // graphics settings
   const BACKGROUND_COLOR = 'lightgrey';
-  const NODE_LINE_WIDTH = 2;
-  const NODE_COLOR = 'White';
-  const NODE_RADIUS = 5;
+  const STROKE_WIDTH = 2;
+  const STROKE_COLOR = 'White';
+  const STROKE_RADIUS = 5;
   
   // circuit representation
   var circuit = [];
 
   // tools
-  const MOVE = 0;
-  const CLICK = 1;
-  const NODE = 2;
-  const TOOL_RANGE = 3;
+  const MOVE = 1;
+  const CLICK = 2;
+  const NODE = 3;
+  const BUFFER = 4;
+  
+  const REMOVE = 0;
+  const TOOL_RANGE = 5;
   
   // current tool
   var currentTool = MOVE; 
   
   // node class
-  function createNode(x, y) {
+  function createNode(x, y, clickable, draggable) {
     return {
       'id': circuit.length,
       'class': 'node',
       'x': x,
       'y': y,
       'state': false,
-      'onClick': function() { this.state ^= true; },
-      'move': function(x, y) { this.x = Math.ceil(x / 10) * 10; this.y = Math.ceil(y / 10) * 10; },
+      'clickable': clickable,
+      'draggable': draggable,
+      'onClick': function() { if (this.clickable) this.state ^= true; },
+      'move': function(x, y) { if (this.draggable) { this.x = Math.ceil(x / 10) * 10; this.y = Math.ceil(y / 10) * 10; }},
+      'function': function () { /* just a placeholder */ }
+    };
+  }
+  
+  // node class
+  function createBuffer(x, y, inputs, output) {
+    return {
+      'id': circuit.length,
+      'class': 'buffer',
+      'x': x,
+      'y': y,
+      'inputs': inputs,
+      'output': output,
+      'move': function(x, y) {
+        // move buffer
+        this.x = Math.ceil(x / 10) * 10; this.y = Math.ceil(y / 10) * 10;
+        
+        // move inputs
+        let yOffset = (this.inputs.length-1)*6*STROKE_RADIUS / 2;
+        for (let i = 0; i < this.inputs.length; i++) {
+          this.inputs[i].x = this.x-8*STROKE_RADIUS;
+          this.inputs[i].y = this.y+6*STROKE_RADIUS*i - yOffset;
+        }
+        
+        // move output
+        this.output.x = this.x+8*STROKE_RADIUS;
+        this.output.y = this.y;
+      },
       'function': function () { /* just a placeholder */ }
     };
   }
@@ -91,22 +119,70 @@
     y = Math.ceil(y / 10) * 10;
     
     switch (currentTool) {
-      case NODE: circuit.push(createNode(x, y)); break;
+      case NODE:
+        circuit.push(createNode(x, y, true, true));
+        break;
+
+      case BUFFER: {
+        let numNodes = parseInt(prompt('How many inputs do you need?', 1));
+        if (numNodes % 2 == 0) numNodes++;
+        circuit.push(createBuffer(x, y, []));
+        let bufferId = circuit.length-1;
+        let yOffset = (numNodes-1)*6*STROKE_RADIUS / 2;
+        for (let i = 0; i < numNodes; i++) {
+          circuit.push(createNode(x-9*STROKE_RADIUS, y+6*STROKE_RADIUS*i - yOffset, true, false));
+          circuit[bufferId].inputs.push(circuit[circuit.length-1]);
+        } circuit.push(createNode(x+8*STROKE_RADIUS, y, false, false));
+        circuit[bufferId].output = circuit[circuit.length-1];
+        break;
+      }
     }
   }
   
   // render element
   function renderElement(e) {
+    context.strokeStyle = STROKE_COLOR;
+        
     switch (e.class) {      
       case 'node':
-        context.fillStyle = e.state ? NODE_COLOR : 'Black';
-        context.lineWidth = NODE_LINE_WIDTH;
-        context.strokeStyle = NODE_COLOR;
+        context.fillStyle = e.state ? STROKE_COLOR : 'Black';
+        context.lineWidth = 2*STROKE_WIDTH;
         context.beginPath();
-        context.arc(e.x, e.y, NODE_RADIUS, 0, 2 * Math.PI);
+        context.arc(e.x, e.y, STROKE_RADIUS, 0, 2 * Math.PI);
         context.stroke();
         context.fill();
         break; 
+      
+      case 'buffer':
+        // render inputs
+        context.lineWidth = STROKE_WIDTH;
+        context.beginPath();
+        context.moveTo(e.inputs[0].x, e.inputs[0].y);
+        for (let i = 0; i < e.inputs.length; i++) {  
+          context.lineTo(e.inputs[i].x, e.inputs[i].y)
+          context.stroke();
+        }
+        
+        // render buffer
+        context.beginPath();
+        context.moveTo(e.x - 2*STROKE_RADIUS, e.y - 2*STROKE_RADIUS);
+        context.lineTo(e.x - 2*STROKE_RADIUS, e.y + 2*STROKE_RADIUS);
+        context.lineTo(e.x + 2*STROKE_RADIUS, e.y);
+        context.closePath();
+        context.stroke();
+
+        // connect inputs to buffer
+        context.beginPath();
+        context.moveTo(e.x - 9*STROKE_RADIUS, e.y);
+        context.lineTo(e.x - 2*STROKE_RADIUS, e.y);
+        context.stroke();
+        
+        // connect buffer to output
+        context.beginPath();
+        context.moveTo(e.x + 2*STROKE_RADIUS, e.y);
+        context.lineTo(e.x + 7*STROKE_RADIUS, e.y);
+        context.stroke();
+        break;
     }
   }
   
@@ -173,8 +249,8 @@
     for (let i = 0; i < circuit.length; i++) {
       let currentElement = circuit[i]; 
       if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
-        if (Math.abs(currentElement.x - startX) <= NODE_RADIUS &&
-            Math.abs(currentElement.y - startY) <= NODE_RADIUS) {
+        if (Math.abs(currentElement.x - startX) <= STROKE_RADIUS &&
+            Math.abs(currentElement.y - startY) <= STROKE_RADIUS) {
           element = currentElement;
         }
       }

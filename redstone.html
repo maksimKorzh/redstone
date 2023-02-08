@@ -8,14 +8,16 @@
                        -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;">
   <table cellspacing="0" style="width: 100%;">
     <tr>
-      <td><button id="tool-1" onclick="changeTool(INDICATOR);" style="width: 100%; background-color: lightgrey;">Node</button></td>
-      <td><button id="tool-2" onclick="changeTool(SWITCH);" style="width: 100%; background-color: lightgrey;">Switch</button></td>
+      <td><button id="tool-0" onclick="changeTool(MOVE);" style="width: 100%; background-color: lightgrey;">Move</button></td>
+      <td><button id="tool-1" onclick="changeTool(CLICK);" style="width: 100%; background-color: lightgrey;">Click</button></td>
+      <td><button id="tool-2" onclick="changeTool(NODE);" style="width: 100%; background-color: lightgrey;">Node</button></td>
+      <!--td><button id="tool-2" onclick="changeTool(SWITCH);" style="width: 100%; background-color: lightgrey;">Switch</button></td>
       <td><button id="tool-3" onclick="changeTool(BUTTON);" style="width: 100%; background-color: lightgrey;">Button</button></td>
       <td><button id="tool-4" onclick="changeTool(WIRE);" style="width: 100%; background-color: lightgrey;">Wire</button></td>
       <td><button id="tool-5" onclick="changeTool(INVERTER);" style="width: 100%; background-color: lightgrey;">Inverter</button></td>
       <td><button id="tool-6" onclick="changeTool(LIGHT);" style="width: 100%; background-color: lightgrey;">Light</button></td>
       <td><button id="tool-7" onclick="changeTool(OR);" style="width: 100%; background-color: lightgrey;">OR</button></td>
-      <td><button id="tool-8" onclick="changeTool(ERASE);" style="width: 100%; background-color: lightgrey;">Erase</button></td>
+      <td><button id="tool-8" onclick="changeTool(ERASE);" style="width: 100%; background-color: lightgrey;">Erase</button></td-->
       <td>
         <select id="tick" style="width: 100%;">
           <option value="0">Instant</option>
@@ -46,115 +48,39 @@
   const canvas = document.getElementById('screen');
   const context = canvas.getContext('2d');
 
-  // FPS
-  const FPS = 60;
-  const cycleDelay = Math.floor(1000 / FPS);
-  var oldCycleTime = 0;
-  var cycleCount = 0;
-  var fps_rate = '...';
-
   // resolution  
   const WIDTH = window.innerWidth;
   const HEIGHT = window.innerHeight;
   
   // graphics settings
   const BACKGROUND_COLOR = 'lightgrey';
-  const NODE_RADIUS = 5;
-  const NODE_COLOR = 'White';
-  const LIGHT_COLOR_OFF = '#660000';
-  const LIGHT_COLOR_ON = '#FF0000';
   const NODE_LINE_WIDTH = 2;
-  const WIRE_COLOR_OFF = '#006600';
-  const WIRE_COLOR_ON = '#00FF00';
-  const WIRE_LINE_WIDTH = 4;
-  const ELEMENT_LENGTH = 30;
+  const NODE_COLOR = 'White';
+  const NODE_RADIUS = 5;
   
   // circuit representation
   var circuit = [];
 
   // tools
-  const OPERATE = 0;
-  const INDICATOR = 1;
-  const SWITCH = 2;
-  const BUTTON = 3;
-  const WIRE = 4;
-  const INVERTER = 5;
-  const LIGHT = 6;
-  const OR = 7;
-  const ERASE = 8;
+  const MOVE = 0;
+  const CLICK = 1;
+  const NODE = 2;
+  const TOOL_RANGE = 3;
   
-  var currentTool = OPERATE; 
+  // current tool
+  var currentTool = MOVE; 
   
   // node class
-  function createNode(name, x, y, active) {
+  function createNode(x, y) {
     return {
       'id': circuit.length,
-      'class': name,
+      'class': 'node',
       'x': x,
       'y': y,
       'state': false,
-      'active': active,
-      'onClick': function() { if (this.class == 'switch') this.state = this.state ? false : true; },
+      'onClick': function() { this.state ^= true; },
       'move': function(x, y) { this.x = Math.ceil(x / 10) * 10; this.y = Math.ceil(y / 10) * 10; },
       'function': function () { /* just a placeholder */ }
-    };
-  }
-  
-  // OR
-  function createOR(node1, node2, node3) {
-    return {
-      'id': circuit.length,
-      'class': 'OR',
-      'in1': node1,
-      'in2': node2,
-      'out': node3,
-      'function': function() {
-        this.out.state = this.in1.state | this.in2.state;
-      }
-    }
-  }
-  
-  // wire class
-  function createWire(node1, node2) {
-    return {
-      'id': circuit.length,
-      'class': 'wire',
-      'in': node1,
-      'out': node2,
-      'state': false,
-      'function': function() { 
-        if (this.state == false && (this.in.state == true || this.out.state == true)) {
-          this.state = true;
-          this.in.state = this.state;
-          this.out.state = this.state;
-        }
-        if (this.state == true && (this.in.state == false || this.out.state == false)) {
-          this.state = false;
-          this.in.state = this.state;
-          this.out.state = this.state;
-        }
-      }
-    };
-  }
-  
-  // inverter class
-  function createInverter(node1, node2) {
-    return {
-      'id': circuit.length,
-      'class': 'inverter',
-      'in': node1,
-      'out': node2,
-      'state': false,
-      'function': function() {
-        if (this.in.state == true) {
-          this.state = true;
-          this.out.state = false;
-        }
-        if (this.in.state == false) {
-          this.state = false;
-          this.out.state = true;
-        }
-      }
     };
   }
   
@@ -165,43 +91,14 @@
     y = Math.ceil(y / 10) * 10;
     
     switch (currentTool) {
-      case INDICATOR:
-        circuit.push(createNode('indicator', x, y, false));
-        break;
-      case SWITCH:
-        circuit.push(createNode('switch', x, y, true));
-        break;
-      case BUTTON:
-        circuit.push(createNode('button', x, y, true));
-        break;
-      case WIRE:
-        circuit.push(createNode('indicator', x, y, false));
-        circuit.push(createNode('indicator', x+ELEMENT_LENGTH*2, y, false));
-        circuit.push(createWire(circuit[circuit.length-2], circuit[circuit.length-1]));
-        break;
-      case INVERTER:
-        circuit.push(createNode('indicator', x, y, false));
-        circuit.push(createNode('indicator', x+ELEMENT_LENGTH*2, y, false));
-        circuit.push(createInverter(circuit[circuit.length-2], circuit[circuit.length-1]));
-        break;
-      case LIGHT:
-        circuit.push(createNode('indicator', x, y, false));
-        circuit.push(createNode('light', x+ELEMENT_LENGTH*2, y, false));
-        circuit.push(createWire(circuit[circuit.length-2], circuit[circuit.length-1]));
-        break;
-      case OR:
-        circuit.push(createNode('indicator', x, y+ELEMENT_LENGTH, false));
-        circuit.push(createNode('indicator', x, y-ELEMENT_LENGTH, false));
-        circuit.push(createNode('indicator', x+ELEMENT_LENGTH, y, false));
-        circuit.push(createOR(circuit[circuit.length-3], circuit[circuit.length-2], circuit[circuit.length-1]));
-        break;
+      case NODE: circuit.push(createNode(x, y)); break;
     }
   }
   
   // render element
   function renderElement(e) {
     switch (e.class) {      
-      case 'indicator':
+      case 'node':
         context.fillStyle = e.state ? NODE_COLOR : 'Black';
         context.lineWidth = NODE_LINE_WIDTH;
         context.strokeStyle = NODE_COLOR;
@@ -209,101 +106,7 @@
         context.arc(e.x, e.y, NODE_RADIUS, 0, 2 * Math.PI);
         context.stroke();
         context.fill();
-        break;
-
-      case 'switch':
-        context.fillStyle = e.state ? NODE_COLOR : 'Black';
-        context.lineWidth = NODE_LINE_WIDTH;
-        context.strokeStyle = NODE_COLOR;
-        context.beginPath();
-        context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
-        context.stroke();
-        context.fill();
-        break;
-      
-      case 'button':
-        context.fillStyle = e.state ? NODE_COLOR : 'Black';
-        context.lineWidth = NODE_LINE_WIDTH;
-        context.strokeStyle = NODE_COLOR;
-        context.beginPath();
-        context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
-        context.stroke();
-        context.fill();
-        break;
-        
-      case 'wire':
-        context.lineWidth = WIRE_LINE_WIDTH;
-        context.strokeStyle = e.state ? WIRE_COLOR_ON : WIRE_COLOR_OFF;
-        context.beginPath();
-        context.moveTo(e.in.x, e.in.y);
-        context.lineTo(e.out.x, e.out.y);
-        context.stroke();
-        context.closePath();
-        renderElement(e.in);
-        renderElement(e.out);
-        break
-
-      case 'inverter':
-        let invX = e.in.x + (e.out.x - e.in.x)/2;
-        let invY = e.in.y + (e.out.y - e.in.y)/2;
-        context.lineWidth = WIRE_LINE_WIDTH;
-        context.strokeStyle = e.state ? WIRE_COLOR_ON : WIRE_COLOR_OFF;
-        context.beginPath();
-        context.moveTo(e.in.x, e.in.y);
-        context.lineTo(invX, invY);
-        context.stroke();
-        context.closePath();
-        context.strokeStyle = e.state ? WIRE_COLOR_OFF : WIRE_COLOR_ON;
-        context.beginPath();
-        context.moveTo(invX, invY);
-        context.lineTo(e.out.x, e.out.y);
-        context.stroke();
-        context.closePath();
-        /*context.fillStyle = e.state ? 'Black' : NODE_COLOR;
-        context.strokeStyle = NODE_COLOR;
-        context.beginPath();
-        context.arc(invX, invY, NODE_RADIUS, 0, 2 * Math.PI);
-        context.stroke();
-        context.fill();*/
-        context.fillStyle = e.state ? 'Black' : NODE_COLOR;
-        context.lineWidth = NODE_LINE_WIDTH;
-        context.strokeStyle = NODE_COLOR;
-        context.beginPath();
-        context.rect(invX-NODE_RADIUS, invY-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
-        context.stroke();
-        context.fill();
-        context.closePath();
-        renderElement(e.in);
-        renderElement(e.out);
-        break;
-
-      case 'light':
-        context.fillStyle = e.state ? LIGHT_COLOR_ON : LIGHT_COLOR_OFF;
-        context.strokeStyle = e.state ? LIGHT_COLOR_ON : LIGHT_COLOR_OFF;
-        context.lineWidth = NODE_LINE_WIDTH;
-        context.beginPath();
-        context.rect(e.x-NODE_RADIUS, e.y-NODE_RADIUS, 2*NODE_RADIUS, 2*NODE_RADIUS);
-        context.stroke();
-        context.fill();
-        break;
-      
-      case 'OR':
-        context.lineWidth = WIRE_LINE_WIDTH;
-        context.strokeStyle = e.out.state ? WIRE_COLOR_ON : WIRE_COLOR_OFF;
-        context.beginPath();
-        context.moveTo(e.in1.x, e.in1.y);
-        context.lineTo(e.in2.x, e.in2.y);
-        context.stroke();
-        context.closePath();
-        context.beginPath();
-        context.moveTo(e.in1.x+(e.in2.x - e.in1.x)/2, e.in2.y-(e.in2.y - e.in1.y)/2);
-        context.lineTo(e.out.x, e.out.y);
-        context.stroke();
-        context.closePath();
-        renderElement(e.in1);
-        renderElement(e.in2);
-        renderElement(e.out);
-        break;
+        break; 
     }
   }
   
@@ -350,49 +153,7 @@
   }
   
   
-  
-  /*circle
-  
-  var c = document.getElementById("myCanvas");
-var ctx = c.getContext("2d");
-ctx.beginPath();
-ctx.arc(100, 75, 50, 0, 2 * Math.PI);
-ctx.stroke();*/
-
-/*rect
-var c = document.getElementById("myCanvas");
-var ctx = c.getContext("2d");
-ctx.beginPath();
-ctx.rect(20, 20, 150, 100);
-ctx.stroke();
-
-*/
-
-  // 
-  /*function fillTriangle(x1, y1, x2, y2, x3, y3, color) {
-    context.fillStyle = color;
-    context.strokeStyle = color;
-    context.beginPath();
-    context.moveTo(x1, y1);
-    context.lineTo(x2, y2);
-    context.lineTo(x3, y3);
-    context.lineTo(x1, y1);
-    context.closePath();
-    context.stroke();
-    context.fill();
-  }*/
-  
-  // render triangle
-  /*function drawTriangle(x1, y1, x2, y2, x3, y3, color) {
-    context.strokeStyle = color;
-    context.beginPath();
-    context.moveTo(x1, y1);
-    context.lineTo(x2, y2);
-    context.lineTo(x3, y3);
-    context.lineTo(x1, y1);
-    context.closePath();
-    context.stroke();
-  }*/
+ 
   
   // delete single node
   function deleteNode(id) {
@@ -400,27 +161,7 @@ ctx.stroke();
       if (circuit[i].id == id) circuit.remove(i);
   }
   
-  // click handle
-  canvas.addEventListener('click', function(e) {  // use event argument
-
-    var rect = canvas.getBoundingClientRect();  // get element's abs. position
-    var x = e.clientX - rect.left + window.scrollX;              // get mouse x and adjust for el.
-    var y = e.clientY - rect.top + window.scrollY;               // get mouse y and adjust for el.
-    
-    if (currentTool == OPERATE) {
-      for (let i = 0; i < circuit.length; i++) {
-        let currentElement = circuit[i]; 
-        if (currentElement.class == 'switch' || currentElement.class == 'button') {
-          if (Math.abs(currentElement.x - x) <= NODE_RADIUS &&
-              Math.abs(currentElement.y - y) <= NODE_RADIUS) {
-            currentElement.onClick();
-            break;
-          }
-        }
-      }
-    } 
-  });
-  
+  // handle user input
   canvas.addEventListener('mousedown', function(e) {
     let element = {'class': 'none'};
     var rect = canvas.getBoundingClientRect();  // get element's abs. position
@@ -439,11 +180,9 @@ ctx.stroke();
       }
     }
 
-    if (element.class == 'button') element.state = true;
-    if (element.class == 'none') {
-      createElement(startX, startY);
-      changeTool(OPERATE);
-      return false;
+    switch (element.class) {
+      case 'none': createElement(startX, startY); return false;
+      case 'node': if (currentTool == CLICK) element.onClick(); break;
     }
       
     canvas.addEventListener('mousemove', onMouseMove);
@@ -453,49 +192,11 @@ ctx.stroke();
       endX = e.clientX - rect.left;               // get mouse x and adjust for el.
       endY = e.clientY - rect.top;                // get mouse y and adjust for el.
 
-      if (currentTool == OPERATE) element.move(endX, endY);
+      // move element
+      if (currentTool == MOVE) element.move(endX, endY);
     }
     
     canvas.onmouseup = function() {
-      // connect nodes
-      for (let i = 0; i < circuit.length; i++) {
-        let currentElement = circuit[i]; 
-        if (currentElement.class == 'button') currentElement.state = false;
-        if (currentElement.class != 'wire' || currentElement.class != 'inverter') {
-          if (Math.abs(currentElement.x - endX) <= NODE_RADIUS*2 &&
-              Math.abs(currentElement.y - endY) <= NODE_RADIUS*2) {
-            let draggedNode = element;
-            let connectNode = currentElement;
-            
-            if (connectNode.id != draggedNode.id) {
-              // node may have more than 1 parent, all has to be overridden
-              let inParents = [];
-              let outParents = [];
-              
-              for (let j = 0; j < circuit.length; j++) {
-                if (circuit[j].class == 'wire' || circuit[j].class == 'inverter') {
-                  // populate parents list
-                  if (circuit[j].in.id == draggedNode.id) inParents.push(circuit[j]);
-                  if (circuit[j].out.id == draggedNode.id) outParents.push(circuit[j]);
-                }
-              }
-              
-              // override parents
-              for (let p = 0; p < inParents.length; p++) {
-                
-                inParents[p].in = connectNode;
-                if (inParents[p].in.id == inParents[p].out.id) deleteNode(inParents[p].id);
-              }
-              for (let p = 0; p < outParents.length; p++) {
-                outParents[p].out = connectNode;
-                if (outParents[p].in.id == outParents[p].out.id) deleteNode(outParents[p].id);
-              }
-              if (inParents.length || outParents.length) deleteNode(draggedNode.id);
-            }
-          }
-        }
-      } 
-
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.onmouseup = null;
     };
@@ -512,7 +213,7 @@ ctx.stroke();
   // change tool
   function changeTool(tool) {
     currentTool = tool;
-    for (let i = 1; i < 9; i++) {
+    for (let i = 0; i < TOOL_RANGE; i++) {
       document.getElementById('tool-' + i).style.backgroundColor = (i == currentTool ? 'cyan' : 'lightgrey');
     }
   }
@@ -521,13 +222,11 @@ ctx.stroke();
     ev.preventDefault();
     return false;
   }, false);
-  
-  
 
-  // move camera
+  
   document.onkeydown = function(event) {
     switch (event.keyCode) {
-      
+      // move camera
       case 38:  break;         /* arrow up     */
       case 40: break;         /* arrow down   */
       case 37:  break;         /* arrow left   */
@@ -543,15 +242,7 @@ ctx.stroke();
   }
 
   // game loop
-  function gameLoop() {
-    // calculate FPS
-    cycleCount++;
-    if (cycleCount >= 60) cycleCount = 0;
-    var startTime = Date.now();
-    var cycleTime = startTime - oldCycleTime;
-    oldCycleTime = startTime;
-    if (cycleCount % 60 == 0) fps_rate = Math.floor(1000 / cycleTime);
-    
+  function gameLoop() {    
     // resize canvas
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
@@ -563,12 +254,6 @@ ctx.stroke();
     let tickDelay = document.getElementById('tick').value;
     if (!tickDelay) requestAnimationFrame(gameLoop);
     else setTimeout(gameLoop, tickDelay)
-    
-    // render FPS to screen
-    context.fillStyle = 'Black';
-    context.font = '10px Monospace';
-    context.fillText('FPS: ' + fps_rate, 0, 20);
-    
-  } window.onload = function() { gameLoop(); }
+  } window.onload = function() { changeTool(MOVE); gameLoop(); }
   
 </script>

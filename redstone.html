@@ -81,7 +81,7 @@
   // node class
   function createNode(x, y, clickable, draggable) {
     return {
-      'id': circuit.length,
+      'id': generateId(),
       'class': 'node',
       'x': x,
       'y': y,
@@ -97,7 +97,7 @@
   // buffer class
   function createBuffer(x, y, inputs, output, inverted) {
     return {
-      'id': circuit.length,
+      'id': generateId(),
       'class': inverted ? 'inverter' : 'buffer',
       'x': x,
       'y': y,
@@ -131,7 +131,7 @@
   // wire class
   function createWire(node1, node2) {
     return {
-      'id': circuit.length,
+      'id': generateId(),
       'class': 'wire',
       'state': false,
       'node1': node1,
@@ -152,6 +152,11 @@
     };
   }
   
+  // generate id
+  function generateId() {
+    return Math.floor(Math.random() * 1000000);
+  }
+  
   // create element
   function createElement(x, y, node1, node2) {
     // grid align
@@ -165,8 +170,7 @@
 
       case BUFFER:
       case INVERTER: {
-        let numNodes = parseInt(prompt('How many inputs do you need?', 1));
-        if (numNodes % 2 == 0) numNodes++;
+        let numNodes = 1;
         circuit.push(createBuffer(x, y, [], 0, (currentTool == BUFFER) ? false : true));
         let bufferId = circuit.length-1;
         let yOffset = (numNodes-1)*6*STROKE_RADIUS / 2;
@@ -184,6 +188,47 @@
     }
   }
   
+  // remove element
+  function removeElement(element) {
+    if (element.class == 'node' && !element.draggable) return;
+    //switch (element.class) {
+     // case 'node':
+        // delete broken wire
+        deleteBrokenWire(element);
+        
+        // delete associated nodes
+        deleteAssociatedNodes(element);
+        
+        // delete node
+        deleteNode(element.id);
+       // break;
+      
+      
+    ///}
+  }
+  
+  // delete broken wire
+  function deleteBrokenWire(element) {
+    for (let i = 0; i < circuit.length; i++) {
+      let currentElement = circuit[i];
+      if (currentElement.class == 'wire') {
+        if (currentElement.node1.id == element.id ||
+            currentElement.node2.id == element.id) {
+            deleteNode(currentElement.id);
+            deleteBrokenWire(element);
+        }
+      }
+    }
+  }
+  
+  // delete associated nodes
+  function deleteAssociatedNodes(element) {
+    for (let i = 0; i < circuit.length; i++) {
+      let currentElement = circuit[i];
+      
+    }
+  }
+        
   // render element
   function renderElement(e) {
     context.strokeStyle = STROKE_COLOR;
@@ -331,6 +376,12 @@
       }
     }
 
+    // remove element
+    if (element.class != 'none' && currentTool == REMOVE) {
+      removeElement(element);
+      return;
+    }
+
     switch (element.class) {
       case 'none': if (currentTool != WIRE) createElement(startX, startY, null, null); return;
       case 'node': {
@@ -338,8 +389,7 @@
         else if (currentTool == WIRE) {
           mouseStartX = element.x;
           mouseStartY = element.y;
-        }
-        break;
+        } break;
       }
     }
       
